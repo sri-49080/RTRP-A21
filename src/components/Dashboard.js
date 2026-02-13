@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
 
-const Dashboard = () => {
+const Dashboard = ({ onNavigateToHistory, onNavigateToAdd }) => {
   const [activeTab, setActiveTab] = useState('home');
 
   const events = [
@@ -219,8 +219,8 @@ const Dashboard = () => {
         <div className="bottom-nav">
           <button className="nav-icon active">🏠</button>
           <button className="nav-icon">🔍</button>
-          <button className="nav-icon">🕐</button>
-          <button className="nav-icon">➕</button>
+          <button className="nav-icon" onClick={onNavigateToHistory}>🕐</button>
+          <button className="nav-icon" onClick={onNavigateToAdd}>➕</button>
         </div>
 
         {/* Home Indicator */}
