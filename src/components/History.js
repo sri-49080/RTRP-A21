@@ -65,16 +65,6 @@ const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd }) => {
   return (
     <div className="history-container">
       <div className="history-card">
-        {/* Status Bar */}
-        <div className="status-bar">
-          <span className="time">9:41</span>
-          <div className="status-icons">
-            <span>📶</span>
-            <span>📡</span>
-            <span>🔋</span>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="history-header">
           <h1 className="history-title">History</h1>

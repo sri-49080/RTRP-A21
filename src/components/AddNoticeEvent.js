@@ -11,7 +11,8 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
     photo2Preview: null,
     visibilityDate2: '',
     hyperlink2: '',
-    section: 'notice'
+    section: 'notice',
+    years: []
   });
 
   const [errors, setErrors] = useState({});
@@ -39,6 +40,18 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
     }));
   };
 
+  const handleYearToggle = (year) => {
+    setFormData(prev => {
+      const updatedYears = prev.years.includes(year)
+        ? prev.years.filter(y => y !== year)
+        : [...prev.years, year];
+      return {
+        ...prev,
+        years: updatedYears
+      };
+    });
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -53,6 +66,9 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
     }
     if (!formData.section) {
       newErrors.section = 'Section is required';
+    }
+    if (formData.years.length === 0) {
+      newErrors.years = 'Please select at least one year level';
     }
 
     setErrors(newErrors);
@@ -71,16 +87,6 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
   return (
     <div className="add-notice-container">
       <div className="add-notice-card">
-        {/* Status Bar */}
-        <div className="status-bar">
-          <span className="time">9:41</span>
-          <div className="status-icons">
-            <span>📶</span>
-            <span>📡</span>
-            <span>🔋</span>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="add-notice-header">
           <h1 className="web-title">web title</h1>
@@ -210,6 +216,53 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
                 <option value="event">Event</option>
               </select>
               {errors.section && <span className="error-text">{errors.section}</span>}
+            </div>
+
+            {/* Year Level Multi-Select - Mandatory */}
+            <div className="form-section">
+              <label className="field-label">
+                Display for year levels
+                <span className="required">*</span>
+              </label>
+              <div className={`year-checkbox-group ${errors.years ? 'error' : ''}`}>
+                <label className="year-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.years.includes('1st')}
+                    onChange={() => handleYearToggle('1st')}
+                    className="year-checkbox"
+                  />
+                  <span className="checkbox-text">1st Year</span>
+                </label>
+                <label className="year-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.years.includes('2nd')}
+                    onChange={() => handleYearToggle('2nd')}
+                    className="year-checkbox"
+                  />
+                  <span className="checkbox-text">2nd Year</span>
+                </label>
+                <label className="year-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.years.includes('3rd')}
+                    onChange={() => handleYearToggle('3rd')}
+                    className="year-checkbox"
+                  />
+                  <span className="checkbox-text">3rd Year</span>
+                </label>
+                <label className="year-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.years.includes('4th')}
+                    onChange={() => handleYearToggle('4th')}
+                    className="year-checkbox"
+                  />
+                  <span className="checkbox-text">4th Year</span>
+                </label>
+              </div>
+              {errors.years && <span className="error-text">{errors.years}</span>}
             </div>
 
             {/* Submit Button */}

@@ -32,16 +32,6 @@ const SignUp = ({ onSignUp }) => {
   return (
     <div className="signup-container">
       <div className="signup-card">
-        {/* Status Bar */}
-        <div className="status-bar">
-          <span className="time">9:41</span>
-          <div className="status-icons">
-            <span>📶</span>
-            <span>📡</span>
-            <span>🔋</span>
-          </div>
-        </div>
-
         {/* Main Content */}
         <div className="signup-content">
           <h1 className="title">TITLE</h1>

@@ -172,16 +172,6 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd }) => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-card">
-        {/* Status Bar */}
-        <div className="status-bar">
-          <span className="time">9:41</span>
-          <div className="status-icons">
-            <span>📶</span>
-            <span>📡</span>
-            <span>🔋</span>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="dashboard-header">
           <h1 className="web-title">web title</h1>

@@ -1,18 +1,19 @@
 .add-notice-container {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
   background-color: #f0f0f0;
-  padding: 20px;
+  padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  width: 100%;
 }
 
 .add-notice-card {
   width: 100%;
-  max-width: 375px;
+  max-width: 100%;
   background-color: #ffffff;
-  border-radius: 20px;
+  border-radius: 0;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   display: flex;
@@ -228,6 +229,59 @@
   border: 1px solid #ff0000;
 }
 
+/* Year Checkbox Group */
+.year-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 6px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.year-checkbox-group.error {
+  background-color: #ffebee;
+  border-color: #ff0000;
+}
+
+.year-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+  min-width: fit-content;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.year-checkbox-label:hover {
+  background-color: #f0f0f0;
+}
+
+.year-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #000000;
+  transition: all 0.2s ease;
+}
+
+.year-checkbox:checked {
+  accent-color: #000000;
+}
+
+.checkbox-text {
+  font-size: 13px;
+  color: #333333;
+  font-weight: 500;
+}
+
 /* Error Text */
 .error-text {
   font-size: 12px;
@@ -309,19 +363,322 @@
 }
 
 /* Responsive Design */
-@media (max-width: 600px) {
+/* Mobile Devices (320px - 480px) */
+@media (max-width: 480px) {
   .add-notice-card {
     max-width: 100%;
     border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+
+  .add-notice-container {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .add-notice-header {
+    padding: 12px 16px;
+  }
+
+  .web-title {
+    font-size: 16px;
+  }
+
+  .profile-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .add-notice-content {
+    padding: 14px;
+  }
+
+  .section-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .field-label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .photo-label {
+    min-height: 100px;
+  }
+
+  .photo-preview {
+    height: 100px;
+  }
+
+  .submit-btn {
+    padding: 11px 14px;
+    font-size: 13px;
+  }
+
+  .year-checkbox-group {
+    gap: 8px;
+    padding: 8px;
+    flex-direction: column;
+  }
+
+  .year-checkbox-label {
+    flex: 1 1 calc(50% - 4px);
+    padding: 6px 8px;
+  }
+
+  .checkbox-text {
+    font-size: 12px;
+  }
+
+  .home-indicator {
+    display: flex;
+  }
+}
+
+/* Small Devices (481px - 600px) */
+@media (min-width: 481px) and (max-width: 600px) {
+  .add-notice-container {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .add-notice-card {
+    max-width: 100%;
+    border-radius: 0;
+    width: 100%;
   }
 
   .add-notice-content {
     padding: 16px;
   }
+
+  .form-input,
+  .form-select {
+    padding: 10px 12px;
+  }
 }
 
-@media (min-width: 768px) {
+/* Tablets (601px - 768px) */
+@media (min-width: 601px) and (max-width: 768px) {
   .add-notice-container {
     background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .add-notice-card {
+    max-width: 100%;
+    border-radius: 16px;
+    width: 100%;
+  }
+
+  .add-notice-content {
+    padding: 20px;
+  }
+
+  .section-label {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .field-label {
+    font-size: 13px;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 11px 13px;
+    font-size: 14px;
+  }
+
+  .photo-label {
+    min-height: 130px;
+  }
+
+  .photo-preview {
+    height: 130px;
+  }
+
+  .submit-btn {
+    padding: 12px 16px;
+  }
+
+  .year-checkbox-group {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .year-checkbox-label {
+    flex: 1 1 calc(50% - 5px);
+    padding: 8px 10px;
+  }
+
+  .checkbox-text {
+    font-size: 13px;
+  }
+
+  .home-indicator {
+    display: none;
+  }
+}
+
+/* Large Tablets and Desktops (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .add-notice-container {
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .add-notice-card {
+    max-width: 100%;
+    border-radius: 16px;
+    width: 100%;
+  }
+
+  .add-notice-header {
+    padding: 18px 24px;
+  }
+
+  .web-title {
+    font-size: 20px;
+  }
+
+  .add-notice-content {
+    padding: 24px;
+  }
+
+  .section-label {
+    font-size: 16px;
+  }
+
+  .field-label {
+    font-size: 14px;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .photo-label {
+    min-height: 150px;
+  }
+
+  .photo-preview {
+    height: 150px;
+  }
+
+  .year-checkbox-group {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .year-checkbox-label {
+    flex: 1 1 calc(50% - 6px);
+    padding: 10px 12px;
+  }
+
+  .checkbox-text {
+    font-size: 14px;
+  }
+
+  .home-indicator {
+    display: none;
+  }
+}
+
+/* Extra Large Desktops (1025px and above) */
+@media (min-width: 1025px) {
+  .add-notice-container {
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .add-notice-card {
+    max-width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    width: 100%;
+  }
+
+  .add-notice-header {
+    padding: 20px 28px;
+  }
+
+  .web-title {
+    font-size: 22px;
+  }
+
+  .add-notice-content {
+    padding: 28px;
+  }
+
+  .form-section {
+    margin-bottom: 18px;
+  }
+
+  .section-label {
+    font-size: 17px;
+  }
+
+  .field-label {
+    font-size: 15px;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 13px 15px;
+    font-size: 16px;
+  }
+
+  .photo-label {
+    min-height: 180px;
+  }
+
+  .photo-preview {
+    height: 180px;
+  }
+
+  .submit-btn {
+    padding: 13px 18px;
+    font-size: 16px;
+  }
+
+  .year-checkbox-group {
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .year-checkbox-label {
+    flex: 1 1 calc(25% - 12px);
+    padding: 12px 14px;
+  }
+
+  .checkbox-text {
+    font-size: 15px;
+  }
+
+  .year-checkbox {
+    width: 18px;
+    height: 18px;
+  }
+
+  .home-indicator {
+    display: none;
   }
 }
