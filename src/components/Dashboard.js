@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import SidePanel from './SidePanel';
+import ItemDetailModal from './ItemDetailModal';
 
 const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeTab, setActiveTab] = useState('home');
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [selectedNoticeEvent, setSelectedNoticeEvent] = useState(null);
 
-  const events = [
+  const [events, setEvents] = useState([
     {
       id: 1,
       title: 'EVENT 1',
@@ -43,28 +45,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
       details: 'date and venue',
       label: 'new'
     }
-  ];
+  ]);
 
-  const academicsNotices = [
-    {
-      id: 1,
-      title: 'NOTICE 1',
-      color: '#90EE90',
-      hasIcon: true
-    },
-    {
-      id: 2,
-      title: 'NOTICE 2',
-      color: '#F0D872'
-    },
-    {
-      id: 3,
-      title: 'NOTICE 3',
-      color: '#FF9999'
-    }
-  ];
-
-  const notices = [
+  const [notices, setNotices] = useState([
     {
       id: 1,
       title: 'NOTICE 1',
@@ -89,7 +72,76 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
       type: 'new',
       category: 'new notices'
     }
-  ];
+  ]);
+
+  const [academicsNotices, setAcademicsNotices] = useState([
+    {
+      id: 1,
+      title: 'NOTICE 1',
+      color: '#90EE90',
+      hasIcon: true
+    },
+    {
+      id: 2,
+      title: 'NOTICE 2',
+      color: '#F0D872'
+    },
+    {
+      id: 3,
+      title: 'NOTICE 3',
+      color: '#FF9999'
+    }
+  ]);
+
+  // Check localStorage for newly added notice/event and add it to the appropriate list
+  useEffect(() => {
+    const newItem = localStorage.getItem('newNoticeEvent');
+    if (newItem) {
+      try {
+        const parsedItem = JSON.parse(newItem);
+        console.log('New item detected:', parsedItem);
+
+        if (parsedItem.section === 'event') {
+          // Add to events list
+          setEvents(prev => [
+            ...prev,
+            {
+              id: parsedItem.id,
+              title: parsedItem.title || 'New Event',
+              details: parsedItem.details || 'date and venue',
+              label: 'new'
+            }
+          ]);
+        } else if (parsedItem.section === 'notice') {
+          // Add to notices list
+          const newNotice = {
+            id: parsedItem.id,
+            title: parsedItem.title || 'New Notice',
+            type: 'new',
+            category: 'new notices'
+          };
+          setNotices(prev => [...prev, newNotice]);
+          
+          // Also add to academics notices with a color
+          const colors = ['#90EE90', '#F0D872', '#FF9999', '#87CEEB', '#DDA0DD'];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          setAcademicsNotices(prev => [
+            ...prev,
+            {
+              id: parsedItem.id,
+              title: parsedItem.title || 'New Notice',
+              color: color
+            }
+          ]);
+        }
+
+        // Clear the localStorage key after consuming it
+        localStorage.removeItem('newNoticeEvent');
+      } catch (error) {
+        console.error('Error processing new notice/event:', error);
+      }
+    }
+  }, []);
 
   const urgentNotices = notices.filter(n => n.type === 'urgent');
   const newNotices = notices.filter(n => n.type === 'new');
@@ -135,7 +187,12 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
         <div className="events-section">
           <div className="events-grid">
             {events.map((event) => (
-              <div key={event.id} className="event-card">
+              <div
+                key={event.id}
+                className="event-card"
+                onClick={() => setSelectedNoticeEvent(event)}
+                style={{ cursor: 'pointer' }}
+              >
                 <span className="event-label">{event.label}</span>
                 <h3 className="event-title">{event.title}</h3>
                 <p className="event-details">{event.details}</p>
@@ -149,7 +206,12 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
           <h3 className="section-title">Notices about to reach deadline</h3>
           <div className="notices-list">
             {urgentNotices.map((notice) => (
-              <div key={notice.id} className="notice-card urgent">
+              <div
+                key={notice.id}
+                className="notice-card urgent"
+                onClick={() => setSelectedNoticeEvent(notice)}
+                style={{ cursor: 'pointer' }}
+              >
                 <span className="notice-title">{notice.title}</span>
               </div>
             ))}
@@ -161,7 +223,12 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
           <h3 className="section-title">new notices</h3>
           <div className="notices-list">
             {newNotices.map((notice) => (
-              <div key={notice.id} className="notice-card new">
+              <div
+                key={notice.id}
+                className="notice-card new"
+                onClick={() => setSelectedNoticeEvent(notice)}
+                style={{ cursor: 'pointer' }}
+              >
                 <span className="notice-title">{notice.title}</span>
               </div>
             ))}
@@ -226,6 +293,12 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
           onLogout={onLogout}
         />
       </div>
+      {selectedNoticeEvent && (
+        <ItemDetailModal
+          item={selectedNoticeEvent}
+          onClose={() => setSelectedNoticeEvent(null)}
+        />
+      )}
     </div>
   );
 };

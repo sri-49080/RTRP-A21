@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AddNoticeEvent.css';
 import SidePanel from './SidePanel';
 
@@ -18,6 +18,19 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
 
   const [errors, setErrors] = useState({});
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  // Load saved form data from localStorage on component mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('addNoticeEventForm');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setFormData(parsedData);
+      } catch (error) {
+        console.error('Error loading saved form data:', error);
+      }
+    }
+  }, []);
 
   const handlePhotoChange = (e, photoField) => {
     const file = e.target.files[0];
@@ -80,9 +93,38 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log('Form submitted:', formData);
-      // Handle form submission here
+      // Save form data to localStorage
+      try {
+        localStorage.setItem('addNoticeEventForm', JSON.stringify(formData));
+        console.log('Form saved:', formData);
+
+        // Create a new notice/event object with a unique ID
+        const newItem = {
+          id: Date.now(), // Simple unique ID
+          title: formData.section === 'notice' ? 'New Notice' : 'New Event',
+          details: formData.section === 'event' ? 'date and venue' : undefined,
+          category: formData.section === 'notice' ? 'new notices' : undefined,
+          type: formData.section === 'notice' ? 'new' : 'event',
+          photo: formData.photo1Preview,
+          year: formData.years,
+          section: formData.section,
+          hyperlink: formData.hyperlink1
+        };
+
+        // Save the new item for Dashboard to consume
+        localStorage.setItem('newNoticeEvent', JSON.stringify(newItem));
+        console.log('New item stored:', newItem);
+      } catch (error) {
+        console.error('Error saving form data:', error);
+      }
+
+      // Show alert, then redirect to Dashboard after dismissal
       alert('Notice/Event added successfully!');
+      onNavigateToDashboard();
+      
+      // Optionally reset form and localStorage after successful submission
+      // setFormData({ photo1: null, photo1Preview: null, visibilityDate1: '', hyperlink1: '', photo2: null, photo2Preview: null, visibilityDate2: '', hyperlink2: '', section: 'notice', years: [] });
+      // localStorage.removeItem('addNoticeEventForm');
     }
   };
 
