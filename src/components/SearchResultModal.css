@@ -1,0 +1,33 @@
+.srm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.srm-card {
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  position: relative;
+}
+.srm-close {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  border: none;
+  background: none;
+  font-size: 18px;
+}
+.srm-label { font-size: 12px; color: #666; }
+.srm-title { margin: 8px 0; }
+.srm-sub { color: #666; font-size: 14px; }
+.srm-actions { margin-top: 12px; text-align: right; }
+.srm-action { padding: 8px 12px; border-radius: 8px; border: none; background:#007bff; color:#fff }

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import './History.css';
+import SidePanel from './SidePanel';
 
-const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd }) => {
+const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeHistoryTab, setActiveHistoryTab] = useState('past');
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const pastItems = [
     {
@@ -68,7 +70,10 @@ const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd }) => {
         {/* Header */}
         <div className="history-header">
           <h1 className="history-title">History</h1>
+          <button className="profile-icon" onClick={() => setIsPanelOpen(true)}>👤</button>
         </div>
+
+        
 
         {/* History Tabs */}
         <div className="history-tabs">
@@ -106,13 +111,19 @@ const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd }) => {
         {/* Bottom Navigation */}
         <div className="bottom-nav">
           <button className="nav-icon" onClick={onNavigateToDashboard}>🏠</button>
-          <button className="nav-icon">🔍</button>
+          <button className="nav-icon" onClick={onNavigateToSearch}>🔍</button>
           <button className="nav-icon active">🕐</button>
           <button className="nav-icon" onClick={onNavigateToAdd}>➕</button>
         </div>
 
         {/* Home Indicator */}
         <div className="home-indicator"></div>
+        <SidePanel
+          open={isPanelOpen}
+          onClose={() => setIsPanelOpen(false)}
+          user={{ name: 'John Doe', username: 'jdoe', email: 'jdoe@example.com', id: '12345', year: '3rd Year' }}
+          onLogout={onLogout}
+        />
       </div>
     </div>
   );

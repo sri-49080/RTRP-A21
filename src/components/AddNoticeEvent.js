@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import './AddNoticeEvent.css';
+import SidePanel from './SidePanel';
 
-const AddNoticeEvent = ({ onNavigateToDashboard }) => {
+const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, onNavigateToSearch }) => {
   const [formData, setFormData] = useState({
     photo1: null,
     photo1Preview: null,
@@ -16,6 +17,7 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const handlePhotoChange = (e, photoField) => {
     const file = e.target.files[0];
@@ -89,8 +91,9 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
       <div className="add-notice-card">
         {/* Header */}
         <div className="add-notice-header">
+          <button className="back-btn" onClick={() => window.history.back()}>⟵</button>
           <h1 className="web-title">web title</h1>
-          <div className="profile-icon">👤</div>
+          <button className="profile-icon" onClick={() => setIsPanelOpen(true)}>👤</button>
         </div>
 
         {/* Form Content */}
@@ -275,13 +278,19 @@ const AddNoticeEvent = ({ onNavigateToDashboard }) => {
         {/* Bottom Navigation */}
         <div className="bottom-nav">
           <button className="nav-icon" onClick={onNavigateToDashboard}>🏠</button>
-          <button className="nav-icon">🔍</button>
-          <button className="nav-icon">🕐</button>
+          <button className="nav-icon" onClick={onNavigateToSearch}>🔍</button>
+          <button className="nav-icon" onClick={onNavigateToHistory}>🕐</button>
           <button className="nav-icon active">➕</button>
         </div>
 
         {/* Home Indicator */}
         <div className="home-indicator"></div>
+        <SidePanel
+          open={isPanelOpen}
+          onClose={() => setIsPanelOpen(false)}
+          user={{ name: 'John Doe', username: 'jdoe', email: 'jdoe@example.com', id: '12345', year: '3rd Year' }}
+          onLogout={onLogout}
+        />
       </div>
     </div>
   );

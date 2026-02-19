@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import './SignUp.css';
+import SidePanel from './SidePanel';
 
-const SignUp = ({ onSignUp }) => {
+const SignUp = ({ onSignUp, onLogout }) => {
   const [email, setEmail] = useState('');
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -81,6 +83,12 @@ const SignUp = ({ onSignUp }) => {
 
         {/* Home Indicator */}
         <div className="home-indicator"></div>
+        <SidePanel
+          open={isPanelOpen}
+          onClose={() => setIsPanelOpen(false)}
+          user={{ name: 'John Doe', username: 'jdoe', email: email || 'email@example.com', id: '12345', year: '3rd Year' }}
+          onLogout={onLogout}
+        />
       </div>
     </div>
   );
