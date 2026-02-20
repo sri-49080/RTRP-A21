@@ -109,7 +109,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
               id: parsedItem.id,
               title: parsedItem.title || 'New Event',
               details: parsedItem.details || 'date and venue',
-              label: 'new'
+              label: 'new',
+              photo: parsedItem.photo,
+              hyperlink: parsedItem.hyperlink
             }
           ]);
         } else if (parsedItem.section === 'notice') {
@@ -118,7 +120,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
             id: parsedItem.id,
             title: parsedItem.title || 'New Notice',
             type: 'new',
-            category: 'new notices'
+            category: 'new notices',
+            photo: parsedItem.photo,
+            hyperlink: parsedItem.hyperlink
           };
           setNotices(prev => [...prev, newNotice]);
           
@@ -130,7 +134,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
             {
               id: parsedItem.id,
               title: parsedItem.title || 'New Notice',
-              color: color
+              color: color,
+              photo: parsedItem.photo,
+              hyperlink: parsedItem.hyperlink
             }
           ]);
         }
@@ -193,6 +199,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
                 onClick={() => setSelectedNoticeEvent(event)}
                 style={{ cursor: 'pointer' }}
               >
+                {event.photo && (
+                  <img src={event.photo} alt={event.title} className="event-card-img" />
+                )}
                 <span className="event-label">{event.label}</span>
                 <h3 className="event-title">{event.title}</h3>
                 <p className="event-details">{event.details}</p>
@@ -212,6 +221,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
                 onClick={() => setSelectedNoticeEvent(notice)}
                 style={{ cursor: 'pointer' }}
               >
+                {notice.photo && (
+                  <img src={notice.photo} alt={notice.title} className="notice-card-img" />
+                )}
                 <span className="notice-title">{notice.title}</span>
               </div>
             ))}
@@ -229,6 +241,9 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
                 onClick={() => setSelectedNoticeEvent(notice)}
                 style={{ cursor: 'pointer' }}
               >
+                {notice.photo && (
+                  <img src={notice.photo} alt={notice.title} className="notice-card-img" />
+                )}
                 <span className="notice-title">{notice.title}</span>
               </div>
             ))}
