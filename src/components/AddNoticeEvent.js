@@ -30,7 +30,7 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
         setFormData(prev => ({
           ...prev,
           [photoField]: file,
-          [photoField.replace('photo', 'photoPreview')]: reader.result
+          [`${photoField}Preview`]: reader.result
         }));
       };
       reader.readAsDataURL(file);
