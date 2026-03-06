@@ -1,78 +1,16 @@
-{
-  "seq": {
-    "events": 7,
-    "notices": 5,
-    "history": 4
-  },
-  "events": [
-    {
-      "id": 1,
-      "title": "EVENT 1",
-      "details": "date and venue"
-    },
-    {
-      "id": 2,
-      "title": "EVENT 2",
-      "details": "date and venue"
-    },
-    {
-      "id": 3,
-      "title": "EVENT 3",
-      "details": "date and venue"
-    },
-    {
-      "id": 4,
-      "title": "EVENT 4",
-      "details": "date and venue"
-    },
-    {
-      "id": 5,
-      "title": "EVENT 5",
-      "details": "date and venue"
-    },
-    {
-      "id": 6,
-      "title": "EVENT 6",
-      "details": "date and venue"
-    }
-  ],
-  "notices": [
-    {
-      "id": 1,
-      "title": "NOTICE 1",
-      "category": "Notices about to reach deadline"
-    },
-    {
-      "id": 2,
-      "title": "NOTICE 2",
-      "category": "Notices about to reach deadline"
-    },
-    {
-      "id": 3,
-      "title": "NOTICE 3",
-      "category": "Notices about to reach deadline"
-    },
-    {
-      "id": 4,
-      "title": "NOTICE 4",
-      "category": "new notices"
-    }
-  ],
-  "history": [
-    {
-      "id": 1,
-      "title": "VIVITSU 2026",
-      "date": "date:23-01-2028"
-    },
-    {
-      "id": 2,
-      "title": "NOTICE 1",
-      "date": "date:12-12-2025"
-    },
-    {
-      "id": 3,
-      "title": "HACKATHON",
-      "date": "date:01-12-2025"
-    }
-  ]
-}
+[
+  {
+    "_id": "1772770376802",
+    "title": "Final Fix Notice Image Upload",
+    "category": "new notices",
+    "type": "new",
+    "photoUrl": null,
+    "visibilityDate": "2026-12-15T00:00:00.000Z",
+    "hyperlink": "https://example.com",
+    "section": "notice",
+    "years": [
+      "[1st, 2nd]"
+    ],
+    "createdAt": "2026-03-06T04:12:56.802Z"
+  }
+]

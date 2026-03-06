@@ -4,6 +4,7 @@ import SidePanel from './SidePanel';
 
 const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, onNavigateToSearch }) => {
   const [formData, setFormData] = useState({
+    title: '',
     photo1: null,
     photo1Preview: null,
     visibilityDate1: '',
@@ -19,18 +20,7 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
   const [errors, setErrors] = useState({});
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  // Load saved form data from localStorage on component mount
-  useEffect(() => {
-    const savedData = localStorage.getItem('addNoticeEventForm');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setFormData(parsedData);
-      } catch (error) {
-        console.error('Error loading saved form data:', error);
-      }
-    }
-  }, []);
+  // (Removed localStorage hydration because it corrupts File objects)
 
   const handlePhotoChange = (e, photoField) => {
     const file = e.target.files[0];
@@ -70,8 +60,11 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.photo1) {
-      newErrors.photo1 = 'Photo is required';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+    if (!formData.photo1 && formData.section === 'notice') {
+      newErrors.photo1 = 'Photo is required for notices';
     }
     if (!formData.visibilityDate1) {
       newErrors.visibilityDate1 = 'Visibility date is required';
@@ -90,41 +83,48 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Save form data to localStorage
       try {
-        localStorage.setItem('addNoticeEventForm', JSON.stringify(formData));
-        console.log('Form saved:', formData);
+        const formDataToSend = new FormData();
+        if (formData.photo1) {
+          formDataToSend.append('photo', formData.photo1);
+        }
 
-        // Create a new notice/event object with a unique ID
-        const newItem = {
-          id: Date.now(), // Simple unique ID
-          title: formData.section === 'notice' ? 'New Notice' : 'New Event',
-          details: formData.section === 'event' ? 'date and venue' : undefined,
-          category: formData.section === 'notice' ? 'new notices' : undefined,
-          type: formData.section === 'notice' ? 'new' : 'event',
-          photo: formData.photo1Preview,
-          year: formData.years,
-          section: formData.section,
-          hyperlink: formData.hyperlink1
-        };
+        formDataToSend.append('title', formData.title);
+        formDataToSend.append('section', formData.section);
+        formDataToSend.append('visibilityDate', formData.visibilityDate1);
+        formDataToSend.append('hyperlink', formData.hyperlink1);
 
-        // Save the new item for Dashboard to consume
-        localStorage.setItem('newNoticeEvent', JSON.stringify(newItem));
-        console.log('New item stored:', newItem);
+        // Append years as JSON string
+        formDataToSend.append('years', JSON.stringify(formData.years));
+
+        // Optional custom title (we can add a title field later if needed, default is handled in backend)
+        const response = await fetch('http://localhost:5000/api/notices', {
+          method: 'POST',
+          body: formDataToSend,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Successfully saved to backend:', result);
+
+          // Show alert, then redirect to Dashboard
+          alert(`${formData.section === 'notice' ? 'Notice' : 'Event'} added successfully!`);
+
+          // Clear saved draft if any
+          localStorage.removeItem('addNoticeEventForm');
+
+          onNavigateToDashboard();
+        } else {
+          console.error('Failed to save to backend');
+          alert('Failed to save. Please try again later.');
+        }
       } catch (error) {
-        console.error('Error saving form data:', error);
+        console.error('Error submitting form:', error);
+        alert('An error occurred. Please make sure the backend server is running.');
       }
-
-      // Show alert, then redirect to Dashboard after dismissal
-      alert('Notice/Event added successfully!');
-      onNavigateToDashboard();
-      
-      // Optionally reset form and localStorage after successful submission
-      // setFormData({ photo1: null, photo1Preview: null, visibilityDate1: '', hyperlink1: '', photo2: null, photo2Preview: null, visibilityDate2: '', hyperlink2: '', section: 'notice', years: [] });
-      // localStorage.removeItem('addNoticeEventForm');
     }
   };
 
@@ -141,11 +141,28 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
         {/* Form Content */}
         <div className="add-notice-content">
           <form onSubmit={handleSubmit}>
+            {/* Title Field - Mandatory */}
+            <div className="form-section">
+              <label htmlFor="noticeTitle" className="field-label">
+                {formData.section === 'notice' ? 'Notice' : 'Event'} Name
+                <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="noticeTitle"
+                placeholder={`Enter ${formData.section === 'notice' ? 'notice' : 'event'} name`}
+                value={formData.title}
+                onChange={(e) => handleInputChange(e, 'title')}
+                className={`form-input ${errors.title ? 'error' : ''}`}
+              />
+              {errors.title && <span className="error-text">{errors.title}</span>}
+            </div>
+
             {/* First Photo Section - Mandatory */}
             <div className="form-section">
               <label className="section-label">
-                add a photo
-                <span className="required">*</span>
+                add a photo {formData.section === 'event' && '(optional)'}
+                {formData.section === 'notice' && <span className="required">*</span>}
               </label>
               <div className="photo-input-wrapper">
                 <input

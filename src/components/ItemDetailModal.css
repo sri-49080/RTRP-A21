@@ -12,13 +12,15 @@
 }
 
 .idm-card {
-  width: 320px;
+  width: 340px;
   background: #fff;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   position: relative;
-  max-height: 80vh;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
 }
 
@@ -41,8 +43,10 @@
 
 .idm-photo {
   width: 100%;
-  height: 300px;
-  object-fit: cover;
+  max-height: 320px;
+  object-fit: contain;
+  background: #f8f8f8;
+  display: block;
 }
 
 .idm-photo-placeholder {

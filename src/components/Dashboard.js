@@ -8,145 +8,33 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedNoticeEvent, setSelectedNoticeEvent] = useState(null);
 
-  const [events, setEvents] = useState([
-    {
-      id: 1,
-      title: 'EVENT 1',
-      details: 'date and venue',
-      label: 'new'
-    },
-    {
-      id: 2,
-      title: 'EVENT 2',
-      details: 'date and venue',
-      label: 'new'
-    },
-    {
-      id: 3,
-      title: 'EVENT 3',
-      details: 'date and venue',
-      label: 'new'
-    },
-    {
-      id: 4,
-      title: 'EVENT 4',
-      details: 'date and venue',
-      label: 'new'
-    },
-    {
-      id: 5,
-      title: 'EVENT 5',
-      details: 'date and venue',
-      label: 'new'
-    },
-    {
-      id: 6,
-      title: 'EVENT 6',
-      details: 'date and venue',
-      label: 'new'
-    }
-  ]);
+  const [events, setEvents] = useState([]);
+  const [notices, setNotices] = useState([]);
+  const [academicsNotices, setAcademicsNotices] = useState([]);
 
-  const [notices, setNotices] = useState([
-    {
-      id: 1,
-      title: 'NOTICE 1',
-      type: 'urgent',
-      category: 'Notices about to reach deadline'
-    },
-    {
-      id: 2,
-      title: 'NOTICE 2',
-      type: 'urgent',
-      category: 'Notices about to reach deadline'
-    },
-    {
-      id: 3,
-      title: 'NOTICE 3',
-      type: 'urgent',
-      category: 'Notices about to reach deadline'
-    },
-    {
-      id: 4,
-      title: 'NOTICE 4',
-      type: 'new',
-      category: 'new notices'
-    }
-  ]);
-
-  const [academicsNotices, setAcademicsNotices] = useState([
-    {
-      id: 1,
-      title: 'NOTICE 1',
-      color: '#90EE90',
-      hasIcon: true
-    },
-    {
-      id: 2,
-      title: 'NOTICE 2',
-      color: '#F0D872'
-    },
-    {
-      id: 3,
-      title: 'NOTICE 3',
-      color: '#FF9999'
-    }
-  ]);
-
-  // Check localStorage for newly added notice/event and add it to the appropriate list
   useEffect(() => {
-    const newItem = localStorage.getItem('newNoticeEvent');
-    if (newItem) {
+    const fetchNotices = async () => {
       try {
-        const parsedItem = JSON.parse(newItem);
-        console.log('New item detected:', parsedItem);
+        const response = await fetch('http://localhost:5000/api/notices');
+        if (response.ok) {
+          const data = await response.json();
 
-        if (parsedItem.section === 'event') {
-          // Add to events list
-          setEvents(prev => [
-            ...prev,
-            {
-              id: parsedItem.id,
-              title: parsedItem.title || 'New Event',
-              details: parsedItem.details || 'date and venue',
-              label: 'new',
-              photo: parsedItem.photo,
-              hyperlink: parsedItem.hyperlink
-            }
-          ]);
-        } else if (parsedItem.section === 'notice') {
-          // Add to notices list
-          const newNotice = {
-            id: parsedItem.id,
-            title: parsedItem.title || 'New Notice',
-            type: 'new',
-            category: 'new notices',
-            photo: parsedItem.photo,
-            hyperlink: parsedItem.hyperlink
-          };
-          setNotices(prev => [...prev, newNotice]);
-          
-          // Also add to academics notices with a color
-          const colors = ['#90EE90', '#F0D872', '#FF9999', '#87CEEB', '#DDA0DD'];
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          setAcademicsNotices(prev => [
-            ...prev,
-            {
-              id: parsedItem.id,
-              title: parsedItem.title || 'New Notice',
-              color: color,
-              photo: parsedItem.photo,
-              hyperlink: parsedItem.hyperlink
-            }
-          ]);
+          // Separate into events and notices
+          const fetchedEvents = data.filter(item => item.section === 'event');
+          const fetchedNotices = data.filter(item => item.section === 'notice');
+
+          setEvents(fetchedEvents);
+          setNotices(fetchedNotices);
+          setAcademicsNotices(fetchedNotices);
+        } else {
+          console.error('Failed to fetch notices');
         }
-
-        // Clear the localStorage key after consuming it
-        localStorage.removeItem('newNoticeEvent');
       } catch (error) {
-        console.error('Error processing new notice/event:', error);
+        console.error('Error fetching notices:', error);
       }
-    }
+    };
+
+    fetchNotices();
   }, []);
 
   const urgentNotices = notices.filter(n => n.type === 'urgent');
@@ -157,14 +45,18 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
       return (
         <div className="academics-content">
           <div className="academics-notices">
-            {academicsNotices.map((notice) => (
+            {notices.length === 0 && <p className="empty-msg">No notices available.</p>}
+            {notices.map((notice) => (
               <div
                 key={notice.id}
                 className="academics-notice-card"
-                style={{ backgroundColor: notice.color }}
+                style={{ backgroundColor: notice.color, cursor: 'pointer' }}
+                onClick={() => setSelectedNoticeEvent(notice)}
               >
+                {notice.photo && (
+                  <img src={notice.photo} alt={notice.title} className="academics-notice-img" />
+                )}
                 <span className="academics-notice-title">{notice.title}</span>
-                {notice.hasIcon && <span className="notice-icon">⋯</span>}
               </div>
             ))}
           </div>
@@ -176,8 +68,17 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
       return (
         <div className="events-content">
           <div className="events-grid-full">
+            {events.length === 0 && <p className="empty-msg">No events available.</p>}
             {events.map((event) => (
-              <div key={event.id} className="event-card-full">
+              <div
+                key={event.id}
+                className="event-card-full"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedNoticeEvent(event)}
+              >
+                {event.photo && (
+                  <img src={event.photo} alt={event.title} className="event-card-full-img" />
+                )}
                 <span className="event-title-full">{event.title}</span>
               </div>
             ))}
@@ -262,7 +163,7 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
           <button className="profile-icon" onClick={() => setIsPanelOpen(true)}>👤</button>
         </div>
 
-        
+
 
         {/* Navigation Tabs */}
         <div className="nav-tabs">

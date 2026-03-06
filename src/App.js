@@ -4,7 +4,6 @@ import Dashboard from './components/Dashboard';
 import History from './components/History';
 import AddNoticeEvent from './components/AddNoticeEvent';
 import Search from './components/Search';
-import SearchResultModal from './components/SearchResultModal';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -56,9 +55,6 @@ function App() {
         <Search onSelect={handleSearchSelect} onBack={() => setCurrentPage('dashboard')} />
       ) : (
         <Dashboard onNavigateToHistory={handleNavigateToHistory} onNavigateToAdd={handleNavigateToAdd} onLogout={handleLogout} onNavigateToSearch={handleNavigateToSearch} selectedItem={selectedItem} />
-      )}
-      {selectedItem && (
-        <SearchResultModal item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
     </div>
   );
