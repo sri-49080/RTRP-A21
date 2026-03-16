@@ -41,6 +41,19 @@ const noticeSchema = new mongoose.Schema({
 
 const Notice = mongoose.model('Notice', noticeSchema);
 
+// Define User Schema
+const userSchema = new mongoose.Schema({
+    name: String,
+    username: { type: String, unique: true, sparse: true },
+    email: { type: String, unique: true, sparse: true },
+    id: String,
+    year: String,
+    password: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -72,10 +85,45 @@ app.get('/api/health', async (req, res) => {
 // Sign Up
 app.post('/api/users/signup', async (req, res) => {
   try {
-    const { name, email, password, year } = req.body;
-    // Note: In production, implement proper authentication
-    res.json({ id: new mongoose.Types.ObjectId(), name, email, year });
+    const { name, email, username, password, id, year } = req.body;
+
+    // Validate required fields
+    if (!email || !username || !name) {
+      return res.status(400).json({ error: 'Name, email, and username are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email or username already registered' });
+    }
+
+    // Create new user
+    const newUser = new User({
+      name,
+      email,
+      username,
+      password: password || '', // Optional password (no hashing for demo)
+      id: id || '',
+      year: year || '1st Year'
+    });
+
+    const savedUser = await newUser.save();
+    console.log('User saved to database:', savedUser._id);
+
+    res.status(201).json({
+      id: savedUser._id,
+      name: savedUser.name,
+      email: savedUser.email,
+      username: savedUser.username,
+      year: savedUser.year,
+      message: 'Sign up successful'
+    });
   } catch (error) {
+    console.error('Error during sign up:', error);
     res.status(500).json({ error: 'Failed to sign up', details: error.message });
   }
 });
@@ -83,10 +131,32 @@ app.post('/api/users/signup', async (req, res) => {
 // Login
 app.post('/api/users/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    // Note: In production, implement proper authentication
-    res.json({ id: new mongoose.Types.ObjectId(), email });
+    const { email, username } = req.body;
+
+    if (!email && !username) {
+      return res.status(400).json({ error: 'Email or username is required' });
+    }
+
+    // Find user by email or username
+    const user = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Return user data
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      year: user.year || '1st Year',
+      message: 'Login successful'
+    });
   } catch (error) {
+    console.error('Error during login:', error);
     res.status(500).json({ error: 'Login failed', details: error.message });
   }
 });

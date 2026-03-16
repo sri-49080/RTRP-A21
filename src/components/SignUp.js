@@ -33,21 +33,54 @@ const SignUp = ({ onSignUp, onLogout, onLoginClick }) => {
       return;
     }
 
-    const user = {
-      name: form.name,
-      username: form.username,
-      email: form.email,
-      id: form.id || '',
-      year: form.year
+    // Call backend to save user
+    const saveUser = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/users/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name,
+            username: form.username,
+            email: form.email,
+            id: form.id || '',
+            year: form.year,
+            password: ''
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('User saved:', data);
+
+          // Also save to localStorage for offline support
+          const user = {
+            id: data.id,
+            name: data.name,
+            username: data.username,
+            email: data.email,
+            year: data.year
+          };
+
+          try {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+          } catch (err) {
+            console.error('Failed to save to localStorage:', err);
+          }
+
+          alert('Sign up successful!');
+          if (onSignUp) onSignUp(user);
+        } else {
+          const error = await response.json();
+          alert('Sign up failed: ' + (error.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error during sign up:', error);
+        alert('Error: ' + error.message);
+      }
     };
 
-    try {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    } catch (err) {
-      console.error('Failed to save user:', err);
-    }
-
-    if (onSignUp) onSignUp(user);
+    saveUser();
   };
 
   return (

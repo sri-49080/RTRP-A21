@@ -3,35 +3,65 @@ import './SignUp.css';
 
 const Login = ({ onLogin, onSwitchToSignUp }) => {
   const [credentials, setCredentials] = useState({ email: '', username: '' });
-  const [storedUser, setStoredUser] = useState(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('currentUser');
-      if (raw) setStoredUser(JSON.parse(raw));
-    } catch (e) {
-      console.error('read stored user', e);
-    }
-  }, []);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!storedUser) {
-      alert('No account found, please sign up.');
+    
+    if (!credentials.email && !credentials.username) {
+      alert('Please enter email or username');
       return;
     }
-    const match =
-      (credentials.email && credentials.email === storedUser.email) ||
-      (credentials.username && credentials.username === storedUser.username);
-    if (match) {
-      onLogin && onLogin(storedUser);
-    } else {
-      alert('Credentials do not match our records.');
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: credentials.email || undefined,
+          username: credentials.username || undefined
+        })
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        console.log('Login successful:', user);
+
+        // Save to localStorage for offline support
+        try {
+          localStorage.setItem('currentUser', JSON.stringify({
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            email: user.email,
+            year: user.year
+          }));
+        } catch (err) {
+          console.error('Failed to save to localStorage:', err);
+        }
+
+        onLogin && onLogin({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          email: user.email,
+          year: user.year
+        });
+      } else {
+        const error = await response.json();
+        alert('Login failed: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,6 +80,7 @@ const Login = ({ onLogin, onSwitchToSignUp }) => {
                 placeholder="Email"
                 value={credentials.email}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </label>
             <label className="field-label">
@@ -60,10 +91,11 @@ const Login = ({ onLogin, onSwitchToSignUp }) => {
                 placeholder="Username"
                 value={credentials.username}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </label>
-            <button type="submit" className="continue-btn">
-              Log In
+            <button type="submit" className="continue-btn" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Log In'}
             </button>
           </form>
           <p className="alternate-text">
