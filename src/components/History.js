@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './History.css';
 import SidePanel from './SidePanel';
 
-const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
+const History = ({ user = {}, onClose, onNavigateToDashboard, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeHistoryTab, setActiveHistoryTab] = useState('past');
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
@@ -121,7 +121,7 @@ const History = ({ onClose, onNavigateToDashboard, onNavigateToAdd, onLogout, on
         <SidePanel
           open={isPanelOpen}
           onClose={() => setIsPanelOpen(false)}
-          user={{ name: 'John Doe', username: 'jdoe', email: 'jdoe@example.com', id: '12345', year: '3rd Year' }}
+          user={user}
           onLogout={onLogout}
         />
       </div>

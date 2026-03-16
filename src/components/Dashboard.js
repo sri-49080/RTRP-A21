@@ -3,7 +3,7 @@ import './Dashboard.css';
 import SidePanel from './SidePanel';
 import ItemDetailModal from './ItemDetailModal';
 
-const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
+const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeTab, setActiveTab] = useState('home');
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedNoticeEvent, setSelectedNoticeEvent] = useState(null);
@@ -205,7 +205,7 @@ const Dashboard = ({ onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateT
         <SidePanel
           open={isPanelOpen}
           onClose={() => setIsPanelOpen(false)}
-          user={{ name: 'John Doe', username: 'jdoe', email: 'jdoe@example.com', id: '12345', year: '3rd Year' }}
+          user={user}
           onLogout={onLogout}
         />
       </div>

@@ -1,92 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SignUp.css';
 import SidePanel from './SidePanel';
 
-const SignUp = ({ onSignUp, onLogout }) => {
-  const [email, setEmail] = useState('');
+const SignUp = ({ onSignUp, onLogout, onLoginClick }) => {
+  const [form, setForm] = useState({ name: '', username: '', email: '', id: '', year: '1st Year' });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [theme, setTheme] = useState('light');
 
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleContinue = (e) => {
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem('theme') || 'light';
+      setTheme(t);
+    } catch (e) {}
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (email) {
-      console.log('Email submitted:', email);
-      // Handle email submission here
-      if (onSignUp) {
-        onSignUp();
-      }
+    // simple validation
+    if (!form.name || !form.username || !form.email) {
+      alert('Please fill Name, Username and Email');
+      return;
     }
-  };
 
-  const handleGoogleSignUp = () => {
-    console.log('Google sign-up clicked');
-    // Handle Google OAuth here
-  };
+    const user = {
+      name: form.name,
+      username: form.username,
+      email: form.email,
+      id: form.id || '',
+      year: form.year
+    };
 
-  const handleAppleSignUp = () => {
-    console.log('Apple sign-up clicked');
-    // Handle Apple OAuth here
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    } catch (err) {
+      console.error('Failed to save user:', err);
+    }
+
+    if (onSignUp) onSignUp(user);
   };
 
   return (
-    <div className="signup-container">
+    <div className={`signup-container ${theme === 'dark' ? 'dark-theme' : 'light-theme'}`}>
       <div className="signup-card">
-        {/* Main Content */}
         <div className="signup-content">
-          <h1 className="title">TITLE</h1>
-
-          <h2 className="subtitle">Create an account</h2>
-
-          <p className="description">Enter your email to sign up for this app</p>
-
-          {/* Email Form */}
-          <form onSubmit={handleContinue}>
-            <input
-              type="email"
-              className="email-input"
-              placeholder="email@domain.com"
-              value={email}
-              onChange={handleEmailChange}
-            />
-
-            <button type="submit" className="continue-btn">
-              Continue
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="divider">
-            <span>or</span>
+          <div className="signup-header-row">
+            <h2 className="subtitle">Create an account</h2>
+            <button type="button" className="theme-toggle" onClick={toggleTheme}>{theme === 'light' ? '🌙' : '☀️'}</button>
           </div>
 
-          {/* OAuth Buttons */}
-          <button className="oauth-btn google-btn" onClick={handleGoogleSignUp}>
-            <span className="google-icon">🔍</span>
-            <span>Continue with Google</span>
-          </button>
+          <form onSubmit={handleSubmit} className="signup-form">
+            <label className="field-label">
+              <span className="label-text">Full Name</span>
+              <input className="input-field" name="name" placeholder="Full Name" value={form.name} onChange={handleChange} />
+            </label>
 
-          <button className="oauth-btn apple-btn" onClick={handleAppleSignUp}>
-            <span className="apple-icon">🍎</span>
-            <span>Continue with Apple</span>
-          </button>
+            <label className="field-label">
+              <span className="label-text">Username</span>
+              <input className="input-field" name="username" placeholder="Username" value={form.username} onChange={handleChange} />
+            </label>
 
-          {/* Footer */}
+            <label className="field-label">
+              <span className="label-text">Email</span>
+              <input className="input-field" name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
+            </label>
+
+            <label className="field-label">
+              <span className="label-text">ID / Roll</span>
+              <input className="input-field" name="id" placeholder="ID / Roll" value={form.id} onChange={handleChange} />
+            </label>
+
+            <label className="field-label">
+              <span className="label-text">Academic Year</span>
+              <select className="input-field" name="year" value={form.year} onChange={handleChange}>
+                <option>1st Year</option>
+                <option>2nd Year</option>
+                <option>3rd Year</option>
+                <option>4th Year</option>
+              </select>
+            </label>
+
+            <button type="submit" className="continue-btn">Sign Up</button>
+          </form>+          <p className="alternate-text">Already have an account? <a href="#" onClick={(e)=>{e.preventDefault(); onLoginClick&&onLoginClick();}}>Log in</a></p>
           <p className="footer-text">
-            By clicking continue, you agree to our{' '}
-            <a href="#terms">Terms of Service</a> and{' '}
-            <a href="#privacy">Privacy Policy</a>
+            By signing up you agree to our <a href="#terms">Terms</a> and <a href="#privacy">Privacy</a>.
           </p>
         </div>
 
-        {/* Home Indicator */}
         <div className="home-indicator"></div>
         <SidePanel
           open={isPanelOpen}
           onClose={() => setIsPanelOpen(false)}
-          user={{ name: 'John Doe', username: 'jdoe', email: email || 'email@example.com', id: '12345', year: '3rd Year' }}
+          user={form}
           onLogout={onLogout}
         />
       </div>

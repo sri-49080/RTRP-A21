@@ -46,6 +46,24 @@
   text-align: center;
 }
 
+.signup-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* subtitle centered */
+  position: relative;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .title {
   font-size: 28px;
   font-weight: 700;
@@ -59,6 +77,41 @@
   font-weight: 600;
   color: #000000;
   margin-bottom: 12px;
+}
+
+.field-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+  gap: 12px;
+  width: 100%;
+}
+
+.label-text {
+  width: 140px;
+  min-width: 110px;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 15px;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  border-color: var(--accent);
 }
 
 .description {
@@ -99,26 +152,19 @@ form {
 }
 
 .continue-btn {
-  padding: 14px 16px;
-  background-color: #000000;
-  color: #ffffff;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
-.continue-btn:hover {
-  background-color: #333333;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.continue-btn:active {
-  background-color: #1a1a1a;
-  transform: scale(0.98);
-}
+.continue-btn:hover { box-shadow: 0 8px 30px rgba(31, 41, 55, 0.18); transform: translateY(-2px); }
+.continue-btn:active { transform: translateY(0); opacity: 0.96; }
 
 /* Divider */
 .divider {
@@ -191,6 +237,22 @@ form {
   line-height: 1.6;
 }
 
+.alternate-text {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 14px;
+}
+
+.alternate-text a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.alternate-text a:hover {
+  text-decoration: underline;
+}
+
 .footer-text a {
   color: #007AFF;
   text-decoration: none;
@@ -218,6 +280,37 @@ form {
   height: 4px;
   background-color: #000000;
   border-radius: 2px;
+}
+
+/* Theme variables */
+:root {
+  --bg: #f5f7fb;
+  --card-bg: #ffffff;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --border: #e6e9ef;
+  --accent: #6d28d9;
+  --accent-2: #f97316;
+  --input-bg: #fbfdff;
+}
+
+.light-theme { background: linear-gradient(180deg,#eef2ff,#fff); }
+.dark-theme { background: linear-gradient(180deg,#0f172a,#071024); }
+
+.dark-theme .signup-card { background: #07102a; box-shadow: 0 30px 80px rgba(2,6,23,0.6); }
+.dark-theme .subtitle, .dark-theme .title { color: #f8fafc; }
+.dark-theme .description, .dark-theme .field-label { color: #cbd5e1; }
+.dark-theme .input-field { background: #0b1220; color: #e6eef8; border-color: #1f2a44; }
+.dark-theme .footer-text a { color: #60a5fa; }
+.dark-theme .home-indicator::after { background-color: #94a3b8; }
+
+/* Ensure form spacing */
+.signup-form { display: grid; gap: 12px; max-width: 640px; margin: 0 auto; text-align: left; }
+
+/* Stack labels above inputs on small screens */
+@media (max-width: 600px) {
+  .field-label { flex-direction: column; align-items: flex-start; }
+  .label-text { width: 100%; font-size: 13px; margin-bottom: 6px; }
 }
 
 /* Responsive Design */
