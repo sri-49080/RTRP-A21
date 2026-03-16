@@ -1,16 +1,10 @@
 const express = require('express');
-<<<<<<< HEAD
 const mongoose = require('mongoose');
 const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
-const path = require('path');
-const dotenv = require('dotenv');
-=======
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
->>>>>>> daccf17f132f393b07533a1c04b225f2b26b9d6e
 
 dotenv.config();
 
@@ -19,12 +13,11 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-<<<<<<< HEAD
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Connect to MongoDB
-const mongoURI = 'mongodb://127.0.0.1:27017/noticeboard';
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rtrp_db';
 mongoose.connect(mongoURI)
     .then(() => console.log('MongoDB connected successfully'))
     .catch(err => {
@@ -32,15 +25,26 @@ mongoose.connect(mongoURI)
         process.exit(1);
     });
 
-// Models
-const Notice = require('./models/Notice');
+// Define Notice Schema
+const noticeSchema = new mongoose.Schema({
+    title: String,
+    details: String,
+    category: String,
+    type: String,
+    photoUrl: String,
+    visibilityDate: Date,
+    hyperlink: String,
+    section: String,
+    years: [String],  // Changed from [Number] to [String] to match frontend
+    createdAt: { type: Date, default: Date.now }
+});
 
+const Notice = mongoose.model('Notice', noticeSchema);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Set up Multer for file uploads
-const fs = require('fs');
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         if (!fs.existsSync('uploads')) {
@@ -49,38 +53,91 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname)); // Append extension
+        cb(null, Date.now() + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage: storage });
+
+// Test Database Connection
+app.get('/api/health', async (req, res) => {
+  try {
+    res.json({ status: 'MongoDB connected successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Database connection failed', details: error.message });
+  }
+});
+
+// ============= USERS ROUTES =============
+
+// Sign Up
+app.post('/api/users/signup', async (req, res) => {
+  try {
+    const { name, email, password, year } = req.body;
+    // Note: In production, implement proper authentication
+    res.json({ id: new mongoose.Types.ObjectId(), name, email, year });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to sign up', details: error.message });
+  }
+});
+
+// Login
+app.post('/api/users/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    // Note: In production, implement proper authentication
+    res.json({ id: new mongoose.Types.ObjectId(), email });
+  } catch (error) {
+    res.status(500).json({ error: 'Login failed', details: error.message });
+  }
+});
+
+// ============= NOTICES ROUTES =============
 
 // @route   POST /api/notices
 // @desc    Create a new notice or event
 app.post('/api/notices', upload.single('photo'), async (req, res) => {
     try {
-        console.log('Received Notice Form Data:', req.body);
-        console.log('Received File:', req.file);
+        console.log('========== NEW REQUEST ==========');
+        console.log('Headers:', req.headers);
+        console.log('Body:', req.body);
+        console.log('File:', req.file);
 
-        const { section, visibilityDate, hyperlink, years } = req.body;
-        let title = req.body.title;
-
-        if (!title) {
-            title = section === 'notice' ? 'New Notice' : 'New Event';
+        const { section, visibilityDate, hyperlink, years, title } = req.body;
+        
+        if (!section || !visibilityDate || !hyperlink) {
+            return res.status(400).json({ 
+                message: 'Missing required fields',
+                received: { section, visibilityDate, hyperlink, years, title }
+            });
         }
+
+        let noticeTitle = title || (section === 'notice' ? 'New Notice' : 'New Event');
 
         const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
         let parsedYears = [];
         if (years) {
             try {
-                parsedYears = JSON.parse(years);
+                console.log('Years raw value:', years, 'Type:', typeof years);
+                parsedYears = typeof years === 'string' ? JSON.parse(years) : years;
+                if (!Array.isArray(parsedYears)) {
+                    parsedYears = [parsedYears];
+                }
             } catch (e) {
-                parsedYears = Array.isArray(years) ? years : [years];
+                console.error('Error parsing years:', e);
+                parsedYears = [];
             }
         }
 
+        console.log('Creating notice with:', { 
+            title: noticeTitle, 
+            section, 
+            photoUrl,
+            years: parsedYears
+        });
+
         const newNotice = new Notice({
-            title,
+            title: noticeTitle,
             details: section === 'event' ? 'date and venue' : undefined,
             category: section === 'notice' ? 'new notices' : undefined,
             type: section === 'notice' ? 'new' : 'event',
@@ -108,26 +165,51 @@ app.post('/api/notices', upload.single('photo'), async (req, res) => {
 
         res.status(201).json(responseItem);
     } catch (error) {
-        console.error('Error creating notice:', error);
+        console.error('========== ERROR CREATING NOTICE ==========');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ message: 'Server error', details: error.message });
     }
 });
 
 // @route   GET /api/notices
-// @desc    Get all active notices and events (filtered by visibilityDate)
+// @desc    Get all active notices and events (filtered by visibilityDate and user year)
 app.get('/api/notices', async (req, res) => {
     try {
+        const { year } = req.query; // Optional: filter by user's year
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Find notices where visibilityDate is greater than or equal to today, or where it's not set
-        const notices = await Notice.find({
+        console.log('=== GET /api/notices ===');
+        console.log('Query year parameter:', year);
+
+        // First, delete expired notices (visibility date has passed)
+        const deletedCount = await Notice.deleteMany({
+            visibilityDate: { $lt: today }
+        });
+        console.log('Deleted expired notices:', deletedCount.deletedCount);
+
+        // Build filter query
+        let query = {
             $or: [
                 { visibilityDate: { $gte: today } },
                 { visibilityDate: { $exists: false } },
                 { visibilityDate: null }
             ]
-        }).sort({ createdAt: -1 });
+        };
+
+        // If user year is provided, filter by year match
+        if (year) {
+            query.years = year; // Only show notices that include this year
+            console.log('Filtering by year:', year);
+        }
+
+        console.log('Query object:', JSON.stringify(query, null, 2));
+
+        const notices = await Notice.find(query).sort({ createdAt: -1 });
+        
+        console.log('Found notices count:', notices.length);
+        console.log('Notices:', notices.map(n => ({ title: n.title, years: n.years })));
 
         const formattedNotices = notices.map(notice => ({
             id: notice._id,
@@ -145,236 +227,33 @@ app.get('/api/notices', async (req, res) => {
         res.json(formattedNotices);
     } catch (error) {
         console.error('Error fetching notices:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', details: error.message });
     }
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-=======
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// MySQL Connection Pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'rtrp_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
-// Test Database Connection
-app.get('/api/health', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    await connection.ping();
-    connection.release();
-    res.json({ status: 'Database connected successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Database connection failed', details: error.message });
-  }
-});
-
-// ============= USERS ROUTES =============
-
-// Sign Up
-app.post('/api/users/signup', async (req, res) => {
-  try {
-    const { name, email, password, year } = req.body;
-    const connection = await pool.getConnection();
-
-    // Check if user exists
-    const [existing] = await connection.query(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
-
-    if (existing.length > 0) {
-      connection.release();
-      return res.status(400).json({ error: 'Email already registered' });
-    }
-
-    // Create new user
-    const [result] = await connection.query(
-      'INSERT INTO users (name, email, password, year) VALUES (?, ?, ?, ?)',
-      [name, email, password, year]
-    );
-
-    connection.release();
-    res.json({ id: result.insertId, name, email, year });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to sign up', details: error.message });
-  }
-});
-
-// Login
-app.post('/api/users/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const connection = await pool.getConnection();
-
-    const [users] = await connection.query(
-      'SELECT id, name, email, year FROM users WHERE email = ? AND password = ?',
-      [email, password]
-    );
-
-    connection.release();
-
-    if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    res.json(users[0]);
-  } catch (error) {
-    res.status(500).json({ error: 'Login failed', details: error.message });
-  }
-});
-
-// ============= EVENTS ROUTES =============
-
-// Get all events
-app.get('/api/events', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    const [events] = await connection.query('SELECT * FROM events ORDER BY created_at DESC');
-    connection.release();
-    res.json(events);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch events', details: error.message });
-  }
-});
-
-// Get event by ID
-app.get('/api/events/:id', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    const [events] = await connection.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
-    connection.release();
-
-    if (events.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-
-    res.json(events[0]);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch event', details: error.message });
-  }
-});
-
-// Create event
-app.post('/api/events', async (req, res) => {
-  try {
-    const { title, details, photo, hyperlink, visibility_date, year_levels } = req.body;
-    const connection = await pool.getConnection();
-
-    const [result] = await connection.query(
-      'INSERT INTO events (title, details, photo, hyperlink, visibility_date, year_levels) VALUES (?, ?, ?, ?, ?, ?)',
-      [title, details, photo, hyperlink, visibility_date, JSON.stringify(year_levels)]
-    );
-
-    connection.release();
-    res.json({ id: result.insertId, title, details, photo, hyperlink, visibility_date, year_levels });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create event', details: error.message });
-  }
-});
-
-// Update event
-app.put('/api/events/:id', async (req, res) => {
-  try {
-    const { title, details, photo, hyperlink, visibility_date, year_levels } = req.body;
-    const connection = await pool.getConnection();
-
-    await connection.query(
-      'UPDATE events SET title = ?, details = ?, photo = ?, hyperlink = ?, visibility_date = ?, year_levels = ? WHERE id = ?',
-      [title, details, photo, hyperlink, visibility_date, JSON.stringify(year_levels), req.params.id]
-    );
-
-    connection.release();
-    res.json({ id: req.params.id, title, details, photo, hyperlink, visibility_date, year_levels });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update event', details: error.message });
-  }
-});
-
-// Delete event
-app.delete('/api/events/:id', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    await connection.query('DELETE FROM events WHERE id = ?', [req.params.id]);
-    connection.release();
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete event', details: error.message });
-  }
-});
-
-// ============= NOTICES ROUTES =============
-
-// Get all notices
-app.get('/api/notices', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    const [notices] = await connection.query('SELECT * FROM notices ORDER BY created_at DESC');
-    connection.release();
-    res.json(notices);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch notices', details: error.message });
-  }
 });
 
 // Get notice by ID
 app.get('/api/notices/:id', async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    const [notices] = await connection.query('SELECT * FROM notices WHERE id = ?', [req.params.id]);
-    connection.release();
-
-    if (notices.length === 0) {
+    const notice = await Notice.findById(req.params.id);
+    if (!notice) {
       return res.status(404).json({ error: 'Notice not found' });
     }
-
-    res.json(notices[0]);
+    res.json(notice);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch notice', details: error.message });
-  }
-});
-
-// Create notice
-app.post('/api/notices', async (req, res) => {
-  try {
-    const { title, details, photo, hyperlink, visibility_date, type, year_levels } = req.body;
-    const connection = await pool.getConnection();
-
-    const [result] = await connection.query(
-      'INSERT INTO notices (title, details, photo, hyperlink, visibility_date, type, year_levels) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [title, details, photo, hyperlink, visibility_date, type, JSON.stringify(year_levels)]
-    );
-
-    connection.release();
-    res.json({ id: result.insertId, title, details, photo, hyperlink, visibility_date, type, year_levels });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create notice', details: error.message });
   }
 });
 
 // Update notice
 app.put('/api/notices/:id', async (req, res) => {
   try {
-    const { title, details, photo, hyperlink, visibility_date, type, year_levels } = req.body;
-    const connection = await pool.getConnection();
-
-    await connection.query(
-      'UPDATE notices SET title = ?, details = ?, photo = ?, hyperlink = ?, visibility_date = ?, type = ?, year_levels = ? WHERE id = ?',
-      [title, details, photo, hyperlink, visibility_date, type, JSON.stringify(year_levels), req.params.id]
+    const { title, details, photoUrl, hyperlink, visibilityDate, type, years } = req.body;
+    const updatedNotice = await Notice.findByIdAndUpdate(
+      req.params.id,
+      { title, details, photoUrl, hyperlink, visibilityDate, type, years },
+      { new: true }
     );
-
-    connection.release();
-    res.json({ id: req.params.id, title, details, photo, hyperlink, visibility_date, type, year_levels });
+    res.json(updatedNotice);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update notice', details: error.message });
   }
@@ -383,59 +262,10 @@ app.put('/api/notices/:id', async (req, res) => {
 // Delete notice
 app.delete('/api/notices/:id', async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    await connection.query('DELETE FROM notices WHERE id = ?', [req.params.id]);
-    connection.release();
+    await Notice.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete notice', details: error.message });
-  }
-});
-
-// ============= HISTORY ROUTES =============
-
-// Get user history
-app.get('/api/history/:userId', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    const [history] = await connection.query(
-      'SELECT * FROM search_history WHERE user_id = ? ORDER BY created_at DESC',
-      [req.params.userId]
-    );
-    connection.release();
-    res.json(history);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch history', details: error.message });
-  }
-});
-
-// Add to history
-app.post('/api/history', async (req, res) => {
-  try {
-    const { user_id, item_id, item_type, title } = req.body;
-    const connection = await pool.getConnection();
-
-    const [result] = await connection.query(
-      'INSERT INTO search_history (user_id, item_id, item_type, title) VALUES (?, ?, ?, ?)',
-      [user_id, item_id, item_type, title]
-    );
-
-    connection.release();
-    res.json({ id: result.insertId, user_id, item_id, item_type, title });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to add to history', details: error.message });
-  }
-});
-
-// Delete history entry
-app.delete('/api/history/:id', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    await connection.query('DELETE FROM search_history WHERE id = ?', [req.params.id]);
-    connection.release();
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete history', details: error.message });
   }
 });
 
@@ -449,23 +279,21 @@ app.get('/api/search', async (req, res) => {
       return res.json([]);
     }
 
-    const connection = await pool.getConnection();
-    
-    const searchTerm = `%${q}%`;
-    
-    const [events] = await connection.query(
-      'SELECT id, title, details as details, "event" as type FROM events WHERE title LIKE ? OR details LIKE ?',
-      [searchTerm, searchTerm]
-    );
+    const searchResults = await Notice.find({
+      $or: [
+        { title: { $regex: q, $options: 'i' } },
+        { details: { $regex: q, $options: 'i' } }
+      ]
+    });
 
-    const [notices] = await connection.query(
-      'SELECT id, title, details as details, "notice" as type FROM notices WHERE title LIKE ? OR details LIKE ?',
-      [searchTerm, searchTerm]
-    );
+    const results = searchResults.map(notice => ({
+      id: notice._id,
+      title: notice.title,
+      details: notice.details,
+      type: notice.type,
+      section: notice.section
+    }));
 
-    connection.release();
-
-    const results = [...events, ...notices];
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: 'Search failed', details: error.message });
@@ -478,4 +306,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
->>>>>>> daccf17f132f393b07533a1c04b225f2b26b9d6e

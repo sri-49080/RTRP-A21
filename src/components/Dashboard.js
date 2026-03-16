@@ -15,7 +15,11 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/notices');
+        // Get user's year and pass it as query parameter
+        const userYear = user.year || '1st Year';
+        const url = `http://localhost:5000/api/notices?year=${encodeURIComponent(userYear)}`;
+        
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
 
@@ -35,7 +39,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
     };
 
     fetchNotices();
-  }, []);
+  }, [user]);
 
   const urgentNotices = notices.filter(n => n.type === 'urgent');
   const newNotices = notices.filter(n => n.type === 'new');

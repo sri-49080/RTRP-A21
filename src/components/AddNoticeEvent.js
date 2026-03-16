@@ -290,8 +290,8 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 <label className="year-checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.years.includes('1st')}
-                    onChange={() => handleYearToggle('1st')}
+                    checked={formData.years.includes('1st Year')}
+                    onChange={() => handleYearToggle('1st Year')}
                     className="year-checkbox"
                   />
                   <span className="checkbox-text">1st Year</span>
@@ -299,8 +299,8 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 <label className="year-checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.years.includes('2nd')}
-                    onChange={() => handleYearToggle('2nd')}
+                    checked={formData.years.includes('2nd Year')}
+                    onChange={() => handleYearToggle('2nd Year')}
                     className="year-checkbox"
                   />
                   <span className="checkbox-text">2nd Year</span>
@@ -308,8 +308,8 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 <label className="year-checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.years.includes('3rd')}
-                    onChange={() => handleYearToggle('3rd')}
+                    checked={formData.years.includes('3rd Year')}
+                    onChange={() => handleYearToggle('3rd Year')}
                     className="year-checkbox"
                   />
                   <span className="checkbox-text">3rd Year</span>
@@ -317,8 +317,8 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 <label className="year-checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.years.includes('4th')}
-                    onChange={() => handleYearToggle('4th')}
+                    checked={formData.years.includes('4th Year')}
+                    onChange={() => handleYearToggle('4th Year')}
                     className="year-checkbox"
                   />
                   <span className="checkbox-text">4th Year</span>
