@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './SearchResultModal.css';
 
 const SearchResultModal = ({ item, onClose }) => {
+  const [showDetail, setShowDetail] = useState(false);
+
   if (!item) return null;
 
-  const renderContent = () => {
+  const renderSummary = () => {
     if (item.type === 'event') {
       return (
         <div className="srm-event">
@@ -35,13 +37,44 @@ const SearchResultModal = ({ item, onClose }) => {
     );
   };
 
+  const renderDetailView = () => {
+    return (
+      <div className="srm-overlay" onClick={onClose}>
+        <div className="srm-detail-card" onClick={(e) => e.stopPropagation()}>
+          <button className="srm-detail-close" onClick={onClose}>✕</button>
+          
+          {item.photo ? (
+            <img src={item.photo} alt={item.title} className="srm-detail-photo" />
+          ) : (
+            <div className="srm-detail-photo-placeholder">No photo</div>
+          )}
+          
+          <div className="srm-detail-content">
+            <h2 className="srm-detail-title">{item.title}</h2>
+            {item.details && <p className="srm-detail-details">{item.details}</p>}
+            {item.category && <p className="srm-detail-category">{item.category}</p>}
+            {item.hyperlink && (
+              <a href={item.hyperlink} target="_blank" rel="noopener noreferrer" className="srm-detail-link">
+                View Link
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (showDetail) {
+    return renderDetailView();
+  }
+
   return (
     <div className="srm-overlay" onClick={onClose}>
       <div className="srm-card" onClick={(e) => e.stopPropagation()}>
         <button className="srm-close" onClick={onClose}>✕</button>
-        {renderContent()}
+        {renderSummary()}
         <div className="srm-actions">
-          <button className="srm-action">Open</button>
+          <button className="srm-action" onClick={() => setShowDetail(true)}>Open</button>
         </div>
       </div>
     </div>

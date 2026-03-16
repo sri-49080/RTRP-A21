@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import './Search.css';
 
 const sampleEvents = [
-  { id: 1, title: 'EVENT 1', details: 'date and venue', page: 'dashboard', type: 'event' },
-  { id: 2, title: 'EVENT 2', details: 'date and venue', page: 'dashboard', type: 'event' },
-  { id: 3, title: 'EVENT 3', details: 'date and venue', page: 'dashboard', type: 'event' },
-  { id: 4, title: 'EVENT 4', details: 'date and venue', page: 'dashboard', type: 'event' },
-  { id: 5, title: 'EVENT 5', details: 'date and venue', page: 'dashboard', type: 'event' },
-  { id: 6, title: 'EVENT 6', details: 'date and venue', page: 'dashboard', type: 'event' }
+  { id: 1, title: 'EVENT 1', details: 'date and venue', page: 'dashboard', type: 'event', hyperlink: 'https://forms.google.com' },
+  { id: 2, title: 'EVENT 2', details: 'date and venue', page: 'dashboard', type: 'event', hyperlink: 'https://forms.google.com' },
+  { id: 3, title: 'EVENT 3', details: 'date and venue', page: 'dashboard', type: 'event', hyperlink: 'https://forms.google.com' },
+  { id: 4, title: 'EVENT 4', details: 'date and venue', page: 'dashboard', type: 'event', hyperlink: 'https://forms.google.com' },
+  { id: 5, title: 'EVENT 5', details: 'date and venue', page: 'dashboard', type: 'event', hyperlink: 'https://forms.google.com' },
+  { id: 6, title: 'EVENT 6', details: 'date and venue', page: 'dashboard', type: 'event', hyperlink: 'https://forms.google.com' }
 ];
 
 const sampleNotices = [
-  { id: 1, title: 'NOTICE 1', page: 'dashboard', type: 'notice' },
-  { id: 2, title: 'NOTICE 2', page: 'dashboard', type: 'notice' },
-  { id: 3, title: 'NOTICE 3', page: 'dashboard', type: 'notice' },
-  { id: 4, title: 'NOTICE 4', page: 'dashboard', type: 'notice' }
+  { id: 1, title: 'NOTICE 1', page: 'dashboard', type: 'notice', hyperlink: 'https://forms.google.com' },
+  { id: 2, title: 'NOTICE 2', page: 'dashboard', type: 'notice', hyperlink: 'https://forms.google.com' },
+  { id: 3, title: 'NOTICE 3', page: 'dashboard', type: 'notice', hyperlink: 'https://forms.google.com' },
+  { id: 4, title: 'NOTICE 4', page: 'dashboard', type: 'notice', hyperlink: 'https://forms.google.com' }
 ];
 
 const historyItems = [

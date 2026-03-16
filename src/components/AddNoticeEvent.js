@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './AddNoticeEvent.css';
 import SidePanel from './SidePanel';
 
-const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, onNavigateToSearch }) => {
+const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory, onLogout, onNavigateToSearch }) => {
   const [formData, setFormData] = useState({
     photo1: null,
     photo1Preview: null,
@@ -330,7 +330,7 @@ const AddNoticeEvent = ({ onNavigateToDashboard, onNavigateToHistory, onLogout, 
         <SidePanel
           open={isPanelOpen}
           onClose={() => setIsPanelOpen(false)}
-          user={{ name: 'John Doe', username: 'jdoe', email: 'jdoe@example.com', id: '12345', year: '3rd Year' }}
+          user={user}
           onLogout={onLogout}
         />
       </div>

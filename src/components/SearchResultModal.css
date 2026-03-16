@@ -25,9 +25,90 @@
   border: none;
   background: none;
   font-size: 18px;
+  cursor: pointer;
 }
 .srm-label { font-size: 12px; color: #666; }
 .srm-title { margin: 8px 0; }
 .srm-sub { color: #666; font-size: 14px; }
 .srm-actions { margin-top: 12px; text-align: right; }
-.srm-action { padding: 8px 12px; border-radius: 8px; border: none; background:#007bff; color:#fff }
+.srm-action { padding: 8px 12px; border-radius: 8px; border: none; background:#007bff; color:#fff; cursor: pointer; }
+
+/* Detail View Styles */
+.srm-detail-card {
+  width: 320px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.srm-detail-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.srm-detail-photo {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+.srm-detail-photo-placeholder {
+  width: 100%;
+  height: 300px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.srm-detail-content {
+  padding: 20px;
+}
+
+.srm-detail-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+}
+
+.srm-detail-details,
+.srm-detail-category {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.srm-detail-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.srm-detail-link:hover {
+  background-color: #0056b3;
+}
