@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './AddNoticeEvent.css';
 import SidePanel from './SidePanel';
+import { getItems, addItem } from '../data/storageService';
 
 const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory, onLogout, onNavigateToSearch }) => {
   const [formData, setFormData] = useState({
@@ -83,47 +84,29 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const formDataToSend = new FormData();
-        if (formData.photo1) {
-          formDataToSend.append('photo', formData.photo1);
-        }
+        const item = {
+          id: `item-${Date.now()}`,
+          section: formData.section,
+          type: formData.section === 'notice' ? 'new' : 'event',
+          title: formData.title,
+          details: `Visibility since ${formData.visibilityDate1}.`,
+          photo: formData.photo1Preview || 'https://via.placeholder.com/280x150?text=New+Item',
+          year: formData.years.length === 1 ? formData.years[0] : 'All',
+          visibilityDate: formData.visibilityDate1,
+          hyperlink: formData.hyperlink1
+        };
 
-        formDataToSend.append('title', formData.title);
-        formDataToSend.append('section', formData.section);
-        formDataToSend.append('visibilityDate', formData.visibilityDate1);
-        formDataToSend.append('hyperlink', formData.hyperlink1);
-
-        // Append years as JSON string
-        formDataToSend.append('years', JSON.stringify(formData.years));
-
-        // Optional custom title (we can add a title field later if needed, default is handled in backend)
-        const response = await fetch('http://localhost:5000/api/notices', {
-          method: 'POST',
-          body: formDataToSend,
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log('Successfully saved to backend:', result);
-
-          // Show alert, then redirect to Dashboard
-          alert(`${formData.section === 'notice' ? 'Notice' : 'Event'} added successfully!`);
-
-          // Clear saved draft if any
-          localStorage.removeItem('addNoticeEventForm');
-
-          onNavigateToDashboard();
-        } else {
-          console.error('Failed to save to backend');
-          alert('Failed to save. Please try again later.');
-        }
+        addItem(item);
+        alert(`${formData.section === 'notice' ? 'Notice' : 'Event'} added successfully!`);
+        localStorage.removeItem('addNoticeEventForm');
+        onNavigateToDashboard();
       } catch (error) {
-        console.error('Error submitting form:', error);
-        alert('An error occurred. Please make sure the backend server is running.');
+        console.error('Error saving item:', error);
+        alert('Failed to save item. Please try again.');
       }
     }
   };

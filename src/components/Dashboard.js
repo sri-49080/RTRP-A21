@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import SidePanel from './SidePanel';
 import ItemDetailModal from './ItemDetailModal';
+import { getItems } from '../data/storageService';
 
 const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeTab, setActiveTab] = useState('home');
@@ -13,32 +14,15 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
   const [academicsNotices, setAcademicsNotices] = useState([]);
 
   useEffect(() => {
-    const fetchNotices = async () => {
-      try {
-        // Get user's year and pass it as query parameter
-        const userYear = user.year || '1st Year';
-        const url = `http://localhost:5000/api/notices?year=${encodeURIComponent(userYear)}`;
-        
-        const response = await fetch(url);
-        if (response.ok) {
-          const data = await response.json();
+    const userYear = user.year || '1st Year';
+    const data = getItems();
+    const filtered = data.filter(item => item.year === userYear || item.year === 'All');
+    const fetchedEvents = filtered.filter(item => item.section === 'event');
+    const fetchedNotices = filtered.filter(item => item.section === 'notice');
 
-          // Separate into events and notices
-          const fetchedEvents = data.filter(item => item.section === 'event');
-          const fetchedNotices = data.filter(item => item.section === 'notice');
-
-          setEvents(fetchedEvents);
-          setNotices(fetchedNotices);
-          setAcademicsNotices(fetchedNotices);
-        } else {
-          console.error('Failed to fetch notices');
-        }
-      } catch (error) {
-        console.error('Error fetching notices:', error);
-      }
-    };
-
-    fetchNotices();
+    setEvents(fetchedEvents);
+    setNotices(fetchedNotices);
+    setAcademicsNotices(fetchedNotices);
   }, [user]);
 
   const urgentNotices = notices.filter(n => n.type === 'urgent');

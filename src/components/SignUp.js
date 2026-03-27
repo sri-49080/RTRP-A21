@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './SignUp.css';
 import SidePanel from './SidePanel';
+import { setCurrentUser } from '../data/storageService';
 
 const SignUp = ({ onSignUp, onLogout, onLoginClick }) => {
   const [form, setForm] = useState({ name: '', username: '', email: '', id: '', year: '1st Year' });
@@ -33,54 +34,24 @@ const SignUp = ({ onSignUp, onLogout, onLoginClick }) => {
       return;
     }
 
-    // Call backend to save user
-    const saveUser = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/users/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: form.name,
-            username: form.username,
-            email: form.email,
-            id: form.id || '',
-            year: form.year,
-            password: ''
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('User saved:', data);
-
-          // Also save to localStorage for offline support
-          const user = {
-            id: data.id,
-            name: data.name,
-            username: data.username,
-            email: data.email,
-            year: data.year
-          };
-
-          try {
-            localStorage.setItem('currentUser', JSON.stringify(user));
-          } catch (err) {
-            console.error('Failed to save to localStorage:', err);
-          }
-
-          alert('Sign up successful!');
-          if (onSignUp) onSignUp(user);
-        } else {
-          const error = await response.json();
-          alert('Sign up failed: ' + (error.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Error during sign up:', error);
-        alert('Error: ' + error.message);
-      }
+    const user = {
+      id: form.id || `user-${Date.now()}`,
+      name: form.name,
+      username: form.username,
+      email: form.email,
+      year: form.year
     };
 
-    saveUser();
+    try {
+      setCurrentUser(user);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err);
+    }
+
+    alert('Sign up successful!');
+    if (onSignUp) onSignUp(user);
+
   };
 
   return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SignUp from './components/SignUp';
 import Login from './components/Login';
+import Welcome from './components/Welcome';
 import Dashboard from './components/Dashboard';
 import History from './components/History';
 import AddNoticeEvent from './components/AddNoticeEvent';
@@ -59,6 +60,7 @@ function App() {
   const handleSignUp = (user) => {
     setCurrentUser(user);
     setIsLoggedIn(true);
+    setCurrentPage('welcome');
     try { localStorage.setItem('currentUser', JSON.stringify(user)); } catch (e) {}
   };
   const handleLogin = (user) => {
@@ -87,7 +89,15 @@ function App() {
 
   return (
     <div className="App">
-      {currentPage === 'history' ? (
+      {currentPage === 'welcome' ? (
+        <Welcome
+          user={currentUser}
+          onContinue={handleNavigateToDashboard}
+          onGotoHistory={handleNavigateToHistory}
+          onGotoAdd={handleNavigateToAdd}
+          onLogout={handleLogout}
+        />
+      ) : currentPage === 'history' ? (
         <History user={currentUser} onNavigateToDashboard={handleNavigateToDashboard} onNavigateToAdd={handleNavigateToAdd} onLogout={handleLogout} onNavigateToSearch={handleNavigateToSearch} selectedItem={selectedItem} />
       ) : currentPage === 'add' ? (
         <AddNoticeEvent user={currentUser} onNavigateToDashboard={handleNavigateToDashboard} onLogout={handleLogout} onNavigateToSearch={handleNavigateToSearch} />

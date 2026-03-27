@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Search.css';
 import ItemDetailModal from './ItemDetailModal';
+import { getItems } from '../data/storageService';
 
 const Search = ({ onBack }) => {
   const [query, setQuery] = useState('');
@@ -10,21 +11,17 @@ const Search = ({ onBack }) => {
 
   // Fetch all active notices/events from backend on mount
   useEffect(() => {
-    const fetchAll = async () => {
+    const loadItems = () => {
       try {
-        // Fetch all items for search (no year filter)
-        const res = await fetch('http://localhost:5000/api/notices');
-        if (res.ok) {
-          const data = await res.json();
-          setAllItems(data);
-        }
+        const data = getItems();
+        setAllItems(data);
       } catch (err) {
-        console.error('Failed to fetch notices for search:', err);
+        console.error('Failed to load notices for search:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchAll();
+    loadItems();
   }, []);
 
   const results = query.trim()

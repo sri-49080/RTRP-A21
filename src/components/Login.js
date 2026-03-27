@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './SignUp.css';
+import { getCurrentUser } from '../data/storageService';
 
 const Login = ({ onLogin, onSwitchToSignUp }) => {
   const [credentials, setCredentials] = useState({ email: '', username: '' });
@@ -20,43 +21,23 @@ const Login = ({ onLogin, onSwitchToSignUp }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: credentials.email || undefined,
-          username: credentials.username || undefined
-        })
-      });
-
-      if (response.ok) {
-        const user = await response.json();
-        console.log('Login successful:', user);
-
-        // Save to localStorage for offline support
-        try {
-          localStorage.setItem('currentUser', JSON.stringify({
-            id: user.id,
-            name: user.name,
-            username: user.username,
-            email: user.email,
-            year: user.year
-          }));
-        } catch (err) {
-          console.error('Failed to save to localStorage:', err);
-        }
-
-        onLogin && onLogin({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          email: user.email,
-          year: user.year
-        });
-      } else {
-        const error = await response.json();
-        alert('Login failed: ' + (error.error || 'Unknown error'));
+      const user = getCurrentUser();
+      if (!user) {
+        alert('No user found yet; please sign up first.');
+        return;
       }
+
+      const lookup = (credentials.email && user.email.toLowerCase() === credentials.email.toLowerCase()) ||
+                     (credentials.username && user.username.toLowerCase() === credentials.username.toLowerCase());
+
+      if (!lookup) {
+        alert('Login failed: email or username not found.');
+        return;
+      }
+
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      onLogin && onLogin(user);
+      alert('Login successful!');
     } catch (error) {
       console.error('Error during login:', error);
       alert('Error: ' + error.message);
