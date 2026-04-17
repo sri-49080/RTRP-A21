@@ -16,6 +16,7 @@ const SidePanel = ({ open, onClose, user = {}, onLogout }) => {
           <div className="profile-row"><strong>Email:</strong> <span>{user.email || 'email@example.com'}</span></div>
           <div className="profile-row"><strong>ID / Roll:</strong> <span>{user.id || '12345'}</span></div>
           <div className="profile-row"><strong>Academic Year:</strong> <span>{user.year || '3rd Year'}</span></div>
+          <div className="profile-row"><strong>Role:</strong> <span style={{ fontWeight: 'bold', color: user.role === 'Admin' ? '#ff4444' : '#666666' }}>{user.role || 'Student'}</span></div>
         </div>
 
         <div className="sidepanel-footer">

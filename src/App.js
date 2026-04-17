@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import History from './components/History';
 import AddNoticeEvent from './components/AddNoticeEvent';
 import Search from './components/Search';
+import { clearAuthToken, clearCurrentUser } from './data/storageService';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -40,7 +41,11 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
-    try { localStorage.removeItem('currentUser'); } catch (e) {}
+    try { 
+      localStorage.removeItem('currentUser');
+      clearAuthToken();
+      clearCurrentUser();
+    } catch (e) {}
     setAuthMode('login');
   };
 

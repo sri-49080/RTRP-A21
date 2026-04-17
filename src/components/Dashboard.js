@@ -3,6 +3,7 @@ import './Dashboard.css';
 import SidePanel from './SidePanel';
 import ItemDetailModal from './ItemDetailModal';
 import { getItems } from '../data/storageService';
+import { isAdmin } from '../utils/roleUtils';
 
 const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeTab, setActiveTab] = useState('home');
@@ -13,10 +14,17 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
   const [notices, setNotices] = useState([]);
   const [academicsNotices, setAcademicsNotices] = useState([]);
 
+  const isVisibleForYear = (item, year) => {
+    if (!item) return false;
+    if (item.year === 'All') return true;
+    if (Array.isArray(item.year)) return item.year.includes(year);
+    return item.year === year;
+  };
+
   useEffect(() => {
     const userYear = user.year || '1st Year';
     const data = getItems();
-    const filtered = data.filter(item => item.year === userYear || item.year === 'All');
+    const filtered = data.filter(item => isVisibleForYear(item, userYear));
     const fetchedEvents = filtered.filter(item => item.section === 'event');
     const fetchedNotices = filtered.filter(item => item.section === 'notice');
 
@@ -185,7 +193,11 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
           <button className="nav-icon active">🏠</button>
           <button className="nav-icon" onClick={onNavigateToSearch}>🔍</button>
           <button className="nav-icon" onClick={onNavigateToHistory}>🕐</button>
-          <button className="nav-icon" onClick={onNavigateToAdd}>➕</button>
+          {isAdmin(user) ? (
+            <button className="nav-icon" onClick={onNavigateToAdd}>➕</button>
+          ) : (
+            <button className="nav-icon disabled" title="Admin only" disabled>➕</button>
+          )}
         </div>
 
         {/* Home Indicator */}

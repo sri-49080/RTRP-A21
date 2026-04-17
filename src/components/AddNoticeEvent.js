@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import './AddNoticeEvent.css';
 import SidePanel from './SidePanel';
-import { getItems, addItem } from '../data/storageService';
+import { getItems, addItem, getAuthToken } from '../data/storageService';
+import { isAdmin } from '../utils/roleUtils';
 
 const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory, onLogout, onNavigateToSearch }) => {
   const [formData, setFormData] = useState({
@@ -84,32 +85,120 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('handleSubmit called');
+    console.log('Form data:', formData);
+    
     if (validateForm()) {
+      console.log('Validation passed');
       try {
-        const item = {
-          id: `item-${Date.now()}`,
-          section: formData.section,
-          type: formData.section === 'notice' ? 'new' : 'event',
-          title: formData.title,
-          details: `Visibility since ${formData.visibilityDate1}.`,
-          photo: formData.photo1Preview || 'https://via.placeholder.com/280x150?text=New+Item',
-          year: formData.years.length === 1 ? formData.years[0] : 'All',
-          visibilityDate: formData.visibilityDate1,
-          hyperlink: formData.hyperlink1
-        };
+        const token = getAuthToken();
+        if (!token) {
+          alert('Authentication token not found. Please log in again.');
+          return;
+        }
 
-        addItem(item);
+        console.log('Auth token exists:', !!token);
+
+        // Create FormData to send file
+        const formDataToSend = new FormData();
+        formDataToSend.append('section', formData.section);
+        formDataToSend.append('title', formData.title);
+        formDataToSend.append('visibilityDate', formData.visibilityDate1);
+        formDataToSend.append('hyperlink', formData.hyperlink1);
+        formDataToSend.append('years', JSON.stringify(formData.years));
+        
+        if (formData.photo1) {
+          formDataToSend.append('photo', formData.photo1);
+        }
+
+        console.log('Sending form data:', {
+          section: formData.section,
+          title: formData.title,
+          visibilityDate: formData.visibilityDate1,
+          hyperlink: formData.hyperlink1,
+          years: formData.years,
+          hasPhoto: !!formData.photo1
+        });
+
+        // Call backend API
+        console.log('Making fetch request to:', 'http://localhost:5000/api/notices');
+        
+        const response = await fetch('http://localhost:5000/api/notices', {
+          method: 'POST',
+          body: formDataToSend
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Server error response:', errorData);
+          alert(`Failed to create ${formData.section}: ${errorData.message || errorData.error || 'Unknown error'}`);
+          return;
+        }
+
+        const data = await response.json();
+
+        // Persist the new item in the local dashboard store so it appears immediately
+        addItem(data);
+
         alert(`${formData.section === 'notice' ? 'Notice' : 'Event'} added successfully!`);
-        localStorage.removeItem('addNoticeEventForm');
         onNavigateToDashboard();
       } catch (error) {
         console.error('Error saving item:', error);
-        alert('Failed to save item. Please try again.');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        alert(`Failed to save item: ${error.message}`);
       }
     }
   };
+
+  // Authorization check - only admins can access this page
+  if (!isAdmin(user)) {
+    return (
+      <div className="add-notice-container">
+        <div className="add-notice-card">
+          {/* Header */}
+          <div className="add-notice-header">
+            <button className="back-btn" onClick={onNavigateToDashboard}>⟵</button>
+            <h1 className="web-title">web title</h1>
+            <button className="profile-icon" onClick={() => setIsPanelOpen(true)}>👤</button>
+          </div>
+
+          {/* Auth Error Content */}
+          <div className="add-notice-content auth-error">
+            <div className="error-container">
+              <h2>Access Denied</h2>
+              <p>Admin authentication required.</p>
+              <button onClick={onNavigateToDashboard} className="submit-btn">
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Navigation */}
+          <div className="bottom-nav">
+            <button className="nav-icon" onClick={onNavigateToDashboard}>🏠</button>
+            <button className="nav-icon" onClick={onNavigateToSearch}>🔍</button>
+            <button className="nav-icon" onClick={onNavigateToHistory}>🕐</button>
+            <button className="nav-icon active">➕</button>
+          </div>
+
+          {/* Home Indicator */}
+          <div className="home-indicator"></div>
+          <SidePanel
+            open={isPanelOpen}
+            onClose={() => setIsPanelOpen(false)}
+            user={user}
+            onLogout={onLogout}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="add-notice-container">

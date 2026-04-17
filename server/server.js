@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const { assignRoleByEmail, getAdminDomains } = require('./roleAssigner');
+const { generateToken, authenticateToken, authorize } = require('./authMiddleware');
 
 dotenv.config();
 
@@ -15,6 +17,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rtrp_db';
@@ -49,6 +54,11 @@ const userSchema = new mongoose.Schema({
     id: String,
     year: String,
     password: String,
+    role: {
+        type: String,
+        enum: ['Admin', 'Student'],
+        default: 'Student'
+    },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -101,6 +111,9 @@ app.post('/api/users/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email or username already registered' });
     }
 
+    // Assign role based on email domain
+    const role = assignRoleByEmail(email);
+
     // Create new user
     const newUser = new User({
       name,
@@ -108,18 +121,26 @@ app.post('/api/users/signup', async (req, res) => {
       username,
       password: password || '', // Optional password (no hashing for demo)
       id: id || '',
-      year: year || '1st Year'
+      year: year || '1st Year',
+      role: role
     });
 
     const savedUser = await newUser.save();
-    console.log('User saved to database:', savedUser._id);
+    console.log('User saved to database:', savedUser._id, 'with role:', role);
+
+    // Generate JWT token
+    const token = generateToken(savedUser);
 
     res.status(201).json({
-      id: savedUser._id,
-      name: savedUser.name,
-      email: savedUser.email,
-      username: savedUser.username,
-      year: savedUser.year,
+      token: token,
+      user: {
+        id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email,
+        username: savedUser.username,
+        year: savedUser.year,
+        role: savedUser.role
+      },
       message: 'Sign up successful'
     });
   } catch (error) {
@@ -146,13 +167,20 @@ app.post('/api/users/login', async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Return user data
+    // Generate JWT token
+    const token = generateToken(user);
+
+    // Return user data with token
     res.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      username: user.username,
-      year: user.year || '1st Year',
+      token: token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        year: user.year || '1st Year',
+        role: user.role
+      },
       message: 'Login successful'
     });
   } catch (error) {
@@ -164,13 +192,16 @@ app.post('/api/users/login', async (req, res) => {
 // ============= NOTICES ROUTES =============
 
 // @route   POST /api/notices
-// @desc    Create a new notice or event
+// @desc    Create a new notice or event (Admin only)
+// app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('photo'), async (req, res) => {
 app.post('/api/notices', upload.single('photo'), async (req, res) => {
     try {
-        console.log('========== NEW REQUEST ==========');
-        console.log('Headers:', req.headers);
+        console.log('========== NEW POST /api/notices REQUEST ==========');
+        console.log('Headers:', req.headers.authorization ? 'Bearer token present' : 'No auth header');
+        console.log('User from token:', req.user ? { email: req.user.email, role: req.user.role } : 'No user');
+        console.log('Body keys:', Object.keys(req.body));
         console.log('Body:', req.body);
-        console.log('File:', req.file);
+        console.log('File:', req.file ? req.file.filename : 'No file');
 
         const { section, visibilityDate, hyperlink, years, title } = req.body;
         
@@ -220,6 +251,7 @@ app.post('/api/notices', upload.single('photo'), async (req, res) => {
 
         const savedNotice = await newNotice.save();
         console.log('Saved notice to MongoDB:', savedNotice._id);
+        console.log('Saved notice data:', savedNotice);
 
         const responseItem = {
             id: savedNotice._id,
@@ -230,9 +262,11 @@ app.post('/api/notices', upload.single('photo'), async (req, res) => {
             photo: savedNotice.photoUrl ? `http://localhost:${PORT}${savedNotice.photoUrl}` : null,
             year: savedNotice.years,
             section: savedNotice.section,
-            hyperlink: savedNotice.hyperlink
+            hyperlink: savedNotice.hyperlink,
+            visibilityDate: savedNotice.visibilityDate
         };
 
+        console.log('Sending response:', responseItem);
         res.status(201).json(responseItem);
     } catch (error) {
         console.error('========== ERROR CREATING NOTICE ==========');
@@ -291,6 +325,7 @@ app.get('/api/notices', async (req, res) => {
             year: notice.years,
             section: notice.section,
             hyperlink: notice.hyperlink,
+            visibilityDate: notice.visibilityDate,
             color: notice.section === 'notice' ? ['#90EE90', '#F0D872', '#FF9999', '#87CEEB', '#DDA0DD'][Math.floor(Math.random() * 5)] : undefined
         }));
 

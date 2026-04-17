@@ -211,6 +211,15 @@
   opacity: 1;
 }
 
+.nav-icon.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav-icon.disabled:hover {
+  opacity: 0.3;
+}
+
 /* Home Indicator */
 .home-indicator {
   height: 20px;

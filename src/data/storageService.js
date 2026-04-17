@@ -1,4 +1,5 @@
 const STORAGE_KEY_CURRENT_USER = 'currentUser';
+const STORAGE_KEY_AUTH_TOKEN = 'authToken';
 const STORAGE_KEY_ITEMS = 'noticesEvents';
 
 const sampleItems = [
@@ -95,10 +96,44 @@ const findUserByEmailOrUsername = (value) => {
   return null;
 };
 
+// JWT Token Management
+const getAuthToken = () => {
+  try {
+    return localStorage.getItem(STORAGE_KEY_AUTH_TOKEN);
+  } catch (e) {
+    console.error('Failed to get auth token', e);
+    return null;
+  }
+};
+
+const setAuthToken = (token) => {
+  try {
+    localStorage.setItem(STORAGE_KEY_AUTH_TOKEN, token);
+  } catch (e) {
+    console.error('Failed to save auth token', e);
+  }
+};
+
+const clearAuthToken = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY_AUTH_TOKEN);
+  } catch (e) {
+    console.error('Failed to remove auth token', e);
+  }
+};
+
+const isAuthenticated = () => {
+  return !!getAuthToken() && !!getCurrentUser();
+};
+
 export {
   getCurrentUser,
   setCurrentUser,
   clearCurrentUser,
+  getAuthToken,
+  setAuthToken,
+  clearAuthToken,
+  isAuthenticated,
   getItems,
   addItem,
   saveItems,

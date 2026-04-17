@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './History.css';
 import SidePanel from './SidePanel';
+import { isAdmin } from '../utils/roleUtils';
 
 const History = ({ user = {}, onClose, onNavigateToDashboard, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
   const [activeHistoryTab, setActiveHistoryTab] = useState('past');
@@ -113,7 +114,11 @@ const History = ({ user = {}, onClose, onNavigateToDashboard, onNavigateToAdd, o
           <button className="nav-icon" onClick={onNavigateToDashboard}>🏠</button>
           <button className="nav-icon" onClick={onNavigateToSearch}>🔍</button>
           <button className="nav-icon active">🕐</button>
-          <button className="nav-icon" onClick={onNavigateToAdd}>➕</button>
+          {isAdmin(user) ? (
+            <button className="nav-icon" onClick={onNavigateToAdd}>➕</button>
+          ) : (
+            <button className="nav-icon disabled" title="Admin only" disabled>➕</button>
+          )}
         </div>
 
         {/* Home Indicator */}

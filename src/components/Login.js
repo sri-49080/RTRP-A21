@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './SignUp.css';
-import { getCurrentUser } from '../data/storageService';
+import { getCurrentUser, setCurrentUser, setAuthToken } from '../data/storageService';
 
 const Login = ({ onLogin, onSwitchToSignUp }) => {
   const [credentials, setCredentials] = useState({ email: '', username: '' });
@@ -21,22 +21,33 @@ const Login = ({ onLogin, onSwitchToSignUp }) => {
 
     setIsLoading(true);
     try {
-      const user = getCurrentUser();
-      if (!user) {
-        alert('No user found yet; please sign up first.');
+      // Call backend login API
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          username: credentials.username
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`Login failed: ${errorData.error || 'Unknown error'}`);
+        setIsLoading(false);
         return;
       }
 
-      const lookup = (credentials.email && user.email.toLowerCase() === credentials.email.toLowerCase()) ||
-                     (credentials.username && user.username.toLowerCase() === credentials.username.toLowerCase());
+      const data = await response.json();
+      
+      // Store user and token
+      setCurrentUser(data.user);
+      setAuthToken(data.token);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
 
-      if (!lookup) {
-        alert('Login failed: email or username not found.');
-        return;
-      }
-
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      onLogin && onLogin(user);
+      onLogin && onLogin(data.user);
       alert('Login successful!');
     } catch (error) {
       console.error('Error during login:', error);

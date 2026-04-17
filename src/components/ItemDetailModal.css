@@ -72,10 +72,16 @@
 }
 
 .idm-details,
-.idm-category {
+.idm-category,
+.idm-visibility-date {
   margin: 0 0 10px 0;
   font-size: 14px;
   color: #666;
+}
+
+.idm-visibility-date {
+  font-weight: 500;
+  color: #007bff;
 }
 
 .idm-link {

@@ -19,6 +19,11 @@ const ItemDetailModal = ({ item, onClose }) => {
           <h2 className="idm-title">{item.title}</h2>
           {item.details && <p className="idm-details">{item.details}</p>}
           {item.category && <p className="idm-category">{item.category}</p>}
+          {item.visibilityDate && (
+            <p className="idm-visibility-date">
+              Visible since: {new Date(item.visibilityDate).toLocaleDateString()}
+            </p>
+          )}
           {item.hyperlink && (
             <a href={item.hyperlink} target="_blank" rel="noopener noreferrer" className="idm-link">
               View Link
