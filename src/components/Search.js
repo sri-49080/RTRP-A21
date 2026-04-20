@@ -11,12 +11,26 @@ const Search = ({ onBack }) => {
 
   // Fetch all active notices/events from backend on mount
   useEffect(() => {
-    const loadItems = () => {
+    const loadItems = async () => {
       try {
-        const data = getItems();
+        const response = await fetch('http://localhost:5000/api/notices');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch notices');
+        }
+        
+        const data = await response.json();
         setAllItems(data);
       } catch (err) {
-        console.error('Failed to load notices for search:', err);
+        console.error('Failed to load notices from server, falling back to localStorage:', err);
+        // Fallback to localStorage if server fetch fails
+        try {
+          const data = getItems();
+          setAllItems(data);
+        } catch (localErr) {
+          console.error('Failed to load notices from localStorage:', localErr);
+          setAllItems([]);
+        }
       } finally {
         setLoading(false);
       }

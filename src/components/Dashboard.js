@@ -22,15 +22,42 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
   };
 
   useEffect(() => {
-    const userYear = user.year || '1st Year';
-    const data = getItems();
-    const filtered = data.filter(item => isVisibleForYear(item, userYear));
-    const fetchedEvents = filtered.filter(item => item.section === 'event');
-    const fetchedNotices = filtered.filter(item => item.section === 'notice');
+    const fetchNotices = async () => {
+      try {
+        const userYear = user.year || '1st Year';
+        const response = await fetch(`http://localhost:5000/api/notices?year=${encodeURIComponent(userYear)}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch notices');
+        }
+        
+        const data = await response.json();
+        const fetchedEvents = data.filter(item => item.section === 'event');
+        const fetchedNotices = data.filter(item => item.section === 'notice');
 
-    setEvents(fetchedEvents);
-    setNotices(fetchedNotices);
-    setAcademicsNotices(fetchedNotices);
+        setEvents(fetchedEvents);
+        setNotices(fetchedNotices);
+        setAcademicsNotices(fetchedNotices);
+      } catch (error) {
+        console.error('Error fetching notices:', error);
+        // Fallback to localStorage if server fetch fails
+        const data = getItems();
+        const filtered = data.filter(item => isVisibleForYear(item, user.year || '1st Year'));
+        const fetchedEvents = filtered.filter(item => item.section === 'event');
+        const fetchedNotices = filtered.filter(item => item.section === 'notice');
+
+        setEvents(fetchedEvents);
+        setNotices(fetchedNotices);
+        setAcademicsNotices(fetchedNotices);
+      }
+    };
+
+    fetchNotices();
+    
+    // Refresh data every 5 minutes to update colors
+    const interval = setInterval(fetchNotices, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, [user]);
 
   const urgentNotices = notices.filter(n => n.type === 'urgent');
@@ -69,7 +96,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
               <div
                 key={event.id}
                 className="event-card-full"
-                style={{ cursor: 'pointer' }}
+                style={{ backgroundColor: event.color, cursor: 'pointer' }}
                 onClick={() => setSelectedNoticeEvent(event)}
               >
                 {event.photo && (
@@ -94,7 +121,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
                 key={event.id}
                 className="event-card"
                 onClick={() => setSelectedNoticeEvent(event)}
-                style={{ cursor: 'pointer' }}
+                style={{ backgroundColor: event.color, cursor: 'pointer' }}
               >
                 {event.photo && (
                   <img src={event.photo} alt={event.title} className="event-card-img" />

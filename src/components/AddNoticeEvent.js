@@ -124,9 +124,13 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
 
         // Call backend API
         console.log('Making fetch request to:', 'http://localhost:5000/api/notices');
+        console.log('With token:', token.substring(0, 20) + '...');
         
         const response = await fetch('http://localhost:5000/api/notices', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
           body: formDataToSend
         });
 

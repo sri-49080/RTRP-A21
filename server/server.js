@@ -193,8 +193,7 @@ app.post('/api/users/login', async (req, res) => {
 
 // @route   POST /api/notices
 // @desc    Create a new notice or event (Admin only)
-// app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('photo'), async (req, res) => {
-app.post('/api/notices', upload.single('photo'), async (req, res) => {
+app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('photo'), async (req, res) => {
     try {
         console.log('========== NEW POST /api/notices REQUEST ==========');
         console.log('Headers:', req.headers.authorization ? 'Bearer token present' : 'No auth header');
@@ -315,19 +314,35 @@ app.get('/api/notices', async (req, res) => {
         console.log('Found notices count:', notices.length);
         console.log('Notices:', notices.map(n => ({ title: n.title, years: n.years })));
 
-        const formattedNotices = notices.map(notice => ({
-            id: notice._id,
-            title: notice.title,
-            details: notice.details,
-            category: notice.category,
-            type: notice.type,
-            photo: notice.photoUrl ? `http://localhost:${PORT}${notice.photoUrl}` : null,
-            year: notice.years,
-            section: notice.section,
-            hyperlink: notice.hyperlink,
-            visibilityDate: notice.visibilityDate,
-            color: notice.section === 'notice' ? ['#90EE90', '#F0D872', '#FF9999', '#87CEEB', '#DDA0DD'][Math.floor(Math.random() * 5)] : undefined
-        }));
+        const formattedNotices = notices.map(notice => {
+            // Calculate color based on visibility date
+            let color = undefined;
+            if (notice.visibilityDate) {
+                const visibilityDate = new Date(notice.visibilityDate);
+                const now = new Date();
+                
+                // Calculate days difference ignoring time of day
+                const visibilityDay = new Date(visibilityDate.getFullYear(), visibilityDate.getMonth(), visibilityDate.getDate());
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const daysUntilExpiry = Math.ceil((visibilityDay - today) / (1000 * 60 * 60 * 24));
+                
+                console.log(`Notice "${notice.title}": assigned color=${color}`);
+            }
+
+            return {
+                id: notice._id,
+                title: notice.title,
+                details: notice.details,
+                category: notice.category,
+                type: notice.type,
+                photo: notice.photoUrl ? `http://localhost:${PORT}${notice.photoUrl}` : null,
+                year: notice.years,
+                section: notice.section,
+                hyperlink: notice.hyperlink,
+                visibilityDate: notice.visibilityDate,
+                color: color
+            };
+        });
 
         res.json(formattedNotices);
     } catch (error) {
