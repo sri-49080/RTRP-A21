@@ -36,6 +36,12 @@ const noticeSchema = new mongoose.Schema({
     details: String,
     category: String,
     type: String,
+    photos: [{
+        photoUrl: String,
+        visibilityDate: Date,
+        hyperlink: String
+    }],
+    // Legacy fields for backward compatibility
     photoUrl: String,
     visibilityDate: Date,
     hyperlink: String,
@@ -80,6 +86,7 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage: storage });
+const uploadFields = multer({ storage: storage }).fields([{ name: 'photo', maxCount: 1 }, { name: 'photo2', maxCount: 1 }]);
 
 // Test Database Connection
 app.get('/api/health', async (req, res) => {
@@ -193,16 +200,16 @@ app.post('/api/users/login', async (req, res) => {
 
 // @route   POST /api/notices
 // @desc    Create a new notice or event (Admin only)
-app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('photo'), async (req, res) => {
+app.post('/api/notices', authenticateToken, authorize('Admin'), uploadFields, async (req, res) => {
     try {
         console.log('========== NEW POST /api/notices REQUEST ==========');
         console.log('Headers:', req.headers.authorization ? 'Bearer token present' : 'No auth header');
         console.log('User from token:', req.user ? { email: req.user.email, role: req.user.role } : 'No user');
         console.log('Body keys:', Object.keys(req.body));
         console.log('Body:', req.body);
-        console.log('File:', req.file ? req.file.filename : 'No file');
+        console.log('Files:', req.files ? Object.keys(req.files) : 'No files');
 
-        const { section, visibilityDate, visibilityTime, hyperlink, years, title } = req.body;
+        const { section, visibilityDate, visibilityTime, hyperlink, visibilityDate2, visibilityTime2, hyperlink2, years, title } = req.body;
         
         if (!section || !visibilityDate || !hyperlink) {
             return res.status(400).json({ 
@@ -213,7 +220,54 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
 
         let noticeTitle = title || (section === 'notice' ? 'New Notice' : 'New Event');
 
-        const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        // Process photos array
+        const photos = [];
+
+        // Photo 1 (primary - mandatory)
+        if (req.files && req.files.photo && req.files.photo[0]) {
+            const photoUrl = `/uploads/${req.files.photo[0].filename}`;
+            let visibilityDateTime;
+            if (visibilityDate) {
+                if (visibilityTime) {
+                    const combined = `${visibilityDate}T${visibilityTime}`;
+                    visibilityDateTime = new Date(combined);
+                    if (isNaN(visibilityDateTime)) {
+                        visibilityDateTime = new Date(visibilityDate);
+                    }
+                } else {
+                    visibilityDateTime = new Date(visibilityDate);
+                }
+            }
+            photos.push({
+                photoUrl,
+                visibilityDate: visibilityDateTime,
+                hyperlink
+            });
+            console.log('Added photo 1:', { photoUrl, visibilityDate: visibilityDateTime, hyperlink });
+        }
+
+        // Photo 2 (optional secondary)
+        if (req.files && req.files.photo2 && req.files.photo2[0]) {
+            const photoUrl2 = `/uploads/${req.files.photo2[0].filename}`;
+            let visibilityDateTime2;
+            if (visibilityDate2) {
+                if (visibilityTime2) {
+                    const combined = `${visibilityDate2}T${visibilityTime2}`;
+                    visibilityDateTime2 = new Date(combined);
+                    if (isNaN(visibilityDateTime2)) {
+                        visibilityDateTime2 = new Date(visibilityDate2);
+                    }
+                } else {
+                    visibilityDateTime2 = new Date(visibilityDate2);
+                }
+            }
+            photos.push({
+                photoUrl: photoUrl2,
+                visibilityDate: visibilityDateTime2,
+                hyperlink: hyperlink2
+            });
+            console.log('Added photo 2:', { photoUrl: photoUrl2, visibilityDate: visibilityDateTime2, hyperlink: hyperlink2 });
+        }
 
         let parsedYears = [];
         if (years) {
@@ -232,35 +286,22 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
         console.log('Creating notice with:', { 
             title: noticeTitle, 
             section, 
-            photoUrl,
+            photos,
             years: parsedYears
         });
 
-        // Support optional visibility time: accept either a full ISO datetime in
-        // `visibilityDate` or a date plus `visibilityTime` (HH:mm or HH:mm:ss).
-        let visibilityDateTime;
-        if (visibilityDate) {
-          if (visibilityTime) {
-            // Try combine date and time
-            const combined = `${visibilityDate}T${visibilityTime}`;
-            visibilityDateTime = new Date(combined);
-            if (isNaN(visibilityDateTime)) {
-              // Fallback to parsing visibilityDate alone
-              visibilityDateTime = new Date(visibilityDate);
-            }
-          } else {
-            visibilityDateTime = new Date(visibilityDate);
-          }
-        }
+        // Also set legacy fields for backward compatibility
+        const firstPhoto = photos[0];
 
         const newNotice = new Notice({
           title: noticeTitle,
           details: section === 'event' ? 'date and venue' : undefined,
           category: section === 'notice' ? 'new notices' : undefined,
           type: section === 'notice' ? 'new' : 'event',
-          photoUrl,
-          visibilityDate: visibilityDateTime,
-          hyperlink,
+          photos: photos,
+          photoUrl: firstPhoto?.photoUrl,
+          visibilityDate: firstPhoto?.visibilityDate,
+          hyperlink: firstPhoto?.hyperlink,
           section,
           years: parsedYears
         });
@@ -279,7 +320,12 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
             year: savedNotice.years,
             section: savedNotice.section,
             hyperlink: savedNotice.hyperlink,
-            visibilityDate: savedNotice.visibilityDate
+            visibilityDate: savedNotice.visibilityDate,
+            photos: savedNotice.photos.map(p => ({
+                photo: p.photoUrl ? `http://localhost:${PORT}${p.photoUrl}` : null,
+                visibilityDate: p.visibilityDate,
+                hyperlink: p.hyperlink
+            }))
         };
 
         console.log('Sending response:', responseItem);
@@ -297,27 +343,14 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
 app.get('/api/notices', async (req, res) => {
     try {
         const { year } = req.query; // Optional: filter by user's year
-        // Use current exact time when expiring/filtering notices so visibility
-        // can include a specific time of day.
         const now = new Date();
 
         console.log('=== GET /api/notices ===');
         console.log('Query year parameter:', year);
+        console.log('Current time:', now);
 
-        // First, delete expired notices (visibility date has passed)
-        const deletedCount = await Notice.deleteMany({
-          visibilityDate: { $lt: now }
-        });
-        console.log('Deleted expired notices:', deletedCount.deletedCount);
-
-        // Build filter query
-        let query = {
-          $or: [
-            { visibilityDate: { $gte: now } },
-            { visibilityDate: { $exists: false } },
-            { visibilityDate: null }
-          ]
-        };
+        // Build filter query - find notices that have at least one photo with valid visibility
+        let query = {};
 
         // If user year is provided, filter by year match
         if (year) {
@@ -325,42 +358,108 @@ app.get('/api/notices', async (req, res) => {
             console.log('Filtering by year:', year);
         }
 
-        console.log('Query object:', JSON.stringify(query, null, 2));
-
-        const notices = await Notice.find(query).sort({ createdAt: -1 });
+        // Get all notices matching the year filter
+        const allNotices = await Notice.find(query).sort({ createdAt: -1 });
         
-        console.log('Found notices count:', notices.length);
-        console.log('Notices:', notices.map(n => ({ title: n.title, years: n.years })));
+        console.log('Found total notices count:', allNotices.length);
 
-        const formattedNotices = notices.map(notice => {
-            // Calculate color based on visibility date
-            let color = undefined;
-            if (notice.visibilityDate) {
-                const visibilityDate = new Date(notice.visibilityDate);
-                const now = new Date();
+        // Filter notices based on whether they have any currently visible photos
+        const formattedNotices = allNotices
+            .map(notice => {
+                // Helper function to find the currently visible photo
+                const getVisiblePhoto = (photos) => {
+                    if (!photos || photos.length === 0) {
+                        // Fallback to legacy photoUrl if no photos array
+                        console.log(`Notice "${notice.title}": No photos array, using legacy photoUrl`);
+                        return {
+                            photoUrl: notice.photoUrl,
+                            hyperlink: notice.hyperlink,
+                            visibilityDate: notice.visibilityDate
+                        };
+                    }
 
-                // Calculate days until expiry (fractional days allowed because we use exact times)
-                const msUntilExpiry = visibilityDate - now;
-                const daysUntilExpiry = Math.ceil(msUntilExpiry / (1000 * 60 * 60 * 24));
-                
-                console.log(`Notice "${notice.title}": assigned color=${color}, daysUntilExpiry=${daysUntilExpiry}`);
-            }
+                    console.log(`\n--- Processing notice "${notice.title}" with ${photos.length} photos ---`);
 
-            return {
-                id: notice._id,
-                title: notice.title,
-                details: notice.details,
-                category: notice.category,
-                type: notice.type,
-                photo: notice.photoUrl ? `http://localhost:${PORT}${notice.photoUrl}` : null,
-                year: notice.years,
-                section: notice.section,
-                hyperlink: notice.hyperlink,
-                visibilityDate: notice.visibilityDate,
-                color: color
-            };
-        });
+                    // Sort photos by visibilityDate
+                    const sortedPhotos = [...photos].sort((a, b) => {
+                        const dateA = new Date(a.visibilityDate || 0);
+                        const dateB = new Date(b.visibilityDate || 0);
+                        return dateA - dateB;
+                    });
 
+                    console.log('Sorted photos:', sortedPhotos.map((p, i) => ({
+                        index: i,
+                        visDate: p.visibilityDate,
+                        hasPhotoUrl: !!p.photoUrl
+                    })));
+
+                    // Find the currently visible photo
+                    for (let i = sortedPhotos.length - 1; i >= 0; i--) {
+                        const photo = sortedPhotos[i];
+                        const visDate = new Date(photo.visibilityDate || 0);
+                        
+                        console.log(`Checking photo ${i}: visDate=${photo.visibilityDate}, now=${now}, visDate <= now? ${visDate <= now}`);
+                        
+                        // Check if this photo's visibility date has passed
+                        if (visDate <= now) {
+                            // Check if there's a next photo
+                            if (i === sortedPhotos.length - 1) {
+                                // This is the last photo, so it's visible
+                                console.log(`Photo ${i} is last - showing it`);
+                                return photo;
+                            } else {
+                                // Check if the next photo's visibility date is in the future
+                                const nextPhoto = sortedPhotos[i + 1];
+                                const nextVisDate = new Date(nextPhoto.visibilityDate || 0);
+                                console.log(`Photo ${i} has next photo with visDate=${nextPhoto.visibilityDate}, nextVisDate > now? ${nextVisDate > now}`);
+                                if (nextVisDate > now) {
+                                    // Next photo is not visible yet, so this one is visible
+                                    console.log(`Next photo not visible yet - showing photo ${i}`);
+                                    return photo;
+                                }
+                            }
+                        }
+                    }
+
+                    // If no photo is visible based on dates, return the first one (if it exists)
+                    console.log('No photo found by date logic, returning first photo');
+                    return sortedPhotos.length > 0 ? sortedPhotos[0] : null;
+                };
+
+                const visiblePhoto = getVisiblePhoto(notice.photos);
+
+                // Only include notices that have a visible photo
+                if (!visiblePhoto || !visiblePhoto.photoUrl) {
+                    return null;
+                }
+
+                // Calculate color based on visibility date
+                let color = undefined;
+                if (visiblePhoto.visibilityDate) {
+                    const visibilityDate = new Date(visiblePhoto.visibilityDate);
+                    const msUntilExpiry = visibilityDate - now;
+                    const daysUntilExpiry = Math.ceil(msUntilExpiry / (1000 * 60 * 60 * 24));
+                    
+                    console.log(`Notice "${notice.title}": photo expires in ${daysUntilExpiry} days`);
+                }
+
+                return {
+                    id: notice._id,
+                    title: notice.title,
+                    details: notice.details,
+                    category: notice.category,
+                    type: notice.type,
+                    photo: visiblePhoto.photoUrl ? `http://localhost:${PORT}${visiblePhoto.photoUrl}` : null,
+                    year: notice.years,
+                    section: notice.section,
+                    hyperlink: visiblePhoto.hyperlink,
+                    visibilityDate: visiblePhoto.visibilityDate,
+                    color: color
+                };
+            })
+            .filter(notice => notice !== null); // Remove notices without visible photos
+
+        console.log('Formatted and filtered notices count:', formattedNotices.length);
         res.json(formattedNotices);
     } catch (error) {
         console.error('Error fetching notices:', error);
@@ -435,6 +534,28 @@ app.get('/api/search', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Search failed', details: error.message });
   }
+});
+
+// Global error handler for multer and other errors
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  
+  // Multer errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ message: 'File size too large', details: err.message });
+  }
+  if (err.code === 'LIMIT_FILE_COUNT') {
+    return res.status(400).json({ message: 'Too many files', details: err.message });
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ message: 'Unexpected file field', details: err.message });
+  }
+  
+  // Default error
+  res.status(err.status || 500).json({
+    message: err.message || 'Server error',
+    details: err.details || err.stack
+  });
 });
 
 // Start server

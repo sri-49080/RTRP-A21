@@ -16,6 +16,18 @@ const noticeSchema = new mongoose.Schema({
   category: {
     type: String,
   },
+  photos: [{
+    photoUrl: {
+      type: String,
+    },
+    visibilityDate: {
+      type: Date,
+    },
+    hyperlink: {
+      type: String,
+    }
+  }],
+  // Legacy fields for backward compatibility
   photoUrl: {
     type: String,
   },

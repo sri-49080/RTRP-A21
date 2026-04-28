@@ -104,7 +104,7 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
 
         console.log('Auth token exists:', !!token);
 
-        // Create FormData to send file
+        // Create FormData to send files
         const formDataToSend = new FormData();
         formDataToSend.append('section', formData.section);
         formDataToSend.append('title', formData.title);
@@ -119,13 +119,29 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
           formDataToSend.append('photo', formData.photo1);
         }
 
+        // Add photo2 and its visibility data if provided
+        if (formData.photo2) {
+          formDataToSend.append('photo2', formData.photo2);
+        }
+        if (formData.visibilityDate2) {
+          formDataToSend.append('visibilityDate2', formData.visibilityDate2);
+        }
+        if (formData.visibilityTime2) {
+          formDataToSend.append('visibilityTime2', formData.visibilityTime2);
+        }
+        if (formData.hyperlink2) {
+          formDataToSend.append('hyperlink2', formData.hyperlink2);
+        }
+
         console.log('Sending form data:', {
           section: formData.section,
           title: formData.title,
           visibilityDate: formData.visibilityDate1,
           hyperlink: formData.hyperlink1,
           years: formData.years,
-          hasPhoto: !!formData.photo1
+          hasPhoto: !!formData.photo1,
+          hasPhoto2: !!formData.photo2,
+          visibilityDate2: formData.visibilityDate2
         });
 
         // Call backend API
@@ -143,8 +159,21 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
         console.log('Response status:', response.status);
         console.log('Response ok:', response.ok);
 
+        let errorData = {};
+        const contentType = response.headers.get('content-type');
+        
         if (!response.ok) {
-          const errorData = await response.json();
+          try {
+            if (contentType && contentType.includes('application/json')) {
+              errorData = await response.json();
+            } else {
+              const text = await response.text();
+              errorData = { message: 'Server error', error: text.substring(0, 100) };
+            }
+          } catch (parseError) {
+            console.error('Error parsing response:', parseError);
+            errorData = { message: 'Server error', error: 'Failed to parse server response' };
+          }
           console.error('Server error response:', errorData);
           alert(`Failed to create ${formData.section}: ${errorData.message || errorData.error || 'Unknown error'}`);
           return;

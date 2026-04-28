@@ -54,8 +54,8 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
 
     fetchNotices();
     
-    // Refresh data every 5 minutes to update colors
-    const interval = setInterval(fetchNotices, 5 * 60 * 1000);
+    // Refresh data every 30 seconds to check for photo visibility changes
+    const interval = setInterval(fetchNotices, 30 * 1000);
     
     return () => clearInterval(interval);
   }, [user]);

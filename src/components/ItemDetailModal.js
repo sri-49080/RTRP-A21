@@ -4,6 +4,13 @@ import './ItemDetailModal.css';
 const ItemDetailModal = ({ item, onClose }) => {
   if (!item) return null;
 
+  // Helper function to format visibility date/time
+  const formatVisibilityDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    return d.toLocaleString();
+  };
+
   return (
     <div className="idm-overlay" onClick={onClose}>
       <div className="idm-card" onClick={(e) => e.stopPropagation()}>
@@ -21,7 +28,7 @@ const ItemDetailModal = ({ item, onClose }) => {
           {item.category && <p className="idm-category">{item.category}</p>}
           {item.visibilityDate && (
             <p className="idm-visibility-date">
-              Visible since: {new Date(item.visibilityDate).toLocaleString()}
+              Photo visible until: {formatVisibilityDate(item.visibilityDate)}
             </p>
           )}
           {item.hyperlink && (
