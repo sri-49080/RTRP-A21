@@ -202,7 +202,7 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
         console.log('Body:', req.body);
         console.log('File:', req.file ? req.file.filename : 'No file');
 
-        const { section, visibilityDate, hyperlink, years, title } = req.body;
+        const { section, visibilityDate, visibilityTime, hyperlink, years, title } = req.body;
         
         if (!section || !visibilityDate || !hyperlink) {
             return res.status(400).json({ 
@@ -236,16 +236,33 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
             years: parsedYears
         });
 
+        // Support optional visibility time: accept either a full ISO datetime in
+        // `visibilityDate` or a date plus `visibilityTime` (HH:mm or HH:mm:ss).
+        let visibilityDateTime;
+        if (visibilityDate) {
+          if (visibilityTime) {
+            // Try combine date and time
+            const combined = `${visibilityDate}T${visibilityTime}`;
+            visibilityDateTime = new Date(combined);
+            if (isNaN(visibilityDateTime)) {
+              // Fallback to parsing visibilityDate alone
+              visibilityDateTime = new Date(visibilityDate);
+            }
+          } else {
+            visibilityDateTime = new Date(visibilityDate);
+          }
+        }
+
         const newNotice = new Notice({
-            title: noticeTitle,
-            details: section === 'event' ? 'date and venue' : undefined,
-            category: section === 'notice' ? 'new notices' : undefined,
-            type: section === 'notice' ? 'new' : 'event',
-            photoUrl,
-            visibilityDate: visibilityDate ? new Date(visibilityDate) : undefined,
-            hyperlink,
-            section,
-            years: parsedYears
+          title: noticeTitle,
+          details: section === 'event' ? 'date and venue' : undefined,
+          category: section === 'notice' ? 'new notices' : undefined,
+          type: section === 'notice' ? 'new' : 'event',
+          photoUrl,
+          visibilityDate: visibilityDateTime,
+          hyperlink,
+          section,
+          years: parsedYears
         });
 
         const savedNotice = await newNotice.save();
@@ -280,25 +297,26 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), upload.single('p
 app.get('/api/notices', async (req, res) => {
     try {
         const { year } = req.query; // Optional: filter by user's year
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Use current exact time when expiring/filtering notices so visibility
+        // can include a specific time of day.
+        const now = new Date();
 
         console.log('=== GET /api/notices ===');
         console.log('Query year parameter:', year);
 
         // First, delete expired notices (visibility date has passed)
         const deletedCount = await Notice.deleteMany({
-            visibilityDate: { $lt: today }
+          visibilityDate: { $lt: now }
         });
         console.log('Deleted expired notices:', deletedCount.deletedCount);
 
         // Build filter query
         let query = {
-            $or: [
-                { visibilityDate: { $gte: today } },
-                { visibilityDate: { $exists: false } },
-                { visibilityDate: null }
-            ]
+          $or: [
+            { visibilityDate: { $gte: now } },
+            { visibilityDate: { $exists: false } },
+            { visibilityDate: null }
+          ]
         };
 
         // If user year is provided, filter by year match
@@ -320,13 +338,12 @@ app.get('/api/notices', async (req, res) => {
             if (notice.visibilityDate) {
                 const visibilityDate = new Date(notice.visibilityDate);
                 const now = new Date();
+
+                // Calculate days until expiry (fractional days allowed because we use exact times)
+                const msUntilExpiry = visibilityDate - now;
+                const daysUntilExpiry = Math.ceil(msUntilExpiry / (1000 * 60 * 60 * 24));
                 
-                // Calculate days difference ignoring time of day
-                const visibilityDay = new Date(visibilityDate.getFullYear(), visibilityDate.getMonth(), visibilityDate.getDate());
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const daysUntilExpiry = Math.ceil((visibilityDay - today) / (1000 * 60 * 60 * 24));
-                
-                console.log(`Notice "${notice.title}": assigned color=${color}`);
+                console.log(`Notice "${notice.title}": assigned color=${color}, daysUntilExpiry=${daysUntilExpiry}`);
             }
 
             return {

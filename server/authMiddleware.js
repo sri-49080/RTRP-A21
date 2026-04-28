@@ -82,7 +82,11 @@ function authorize(requiredRoles) {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Compare roles case-insensitively to tolerate existing DB values like 'admin'
+    const loweredRequired = roles.map(r => (r || '').toString().toLowerCase());
+    const userRole = (req.user.role || '').toString().toLowerCase();
+
+    if (!loweredRequired.includes(userRole)) {
       return res.status(403).json({ 
         error: 'Admin authentication required.',
         code: 'FORBIDDEN',

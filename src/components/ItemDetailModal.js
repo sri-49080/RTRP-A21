@@ -21,7 +21,7 @@ const ItemDetailModal = ({ item, onClose }) => {
           {item.category && <p className="idm-category">{item.category}</p>}
           {item.visibilityDate && (
             <p className="idm-visibility-date">
-              Visible since: {new Date(item.visibilityDate).toLocaleDateString()}
+              Visible since: {new Date(item.visibilityDate).toLocaleString()}
             </p>
           )}
           {item.hyperlink && (

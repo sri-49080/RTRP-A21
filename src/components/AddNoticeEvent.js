@@ -10,10 +10,12 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
     photo1: null,
     photo1Preview: null,
     visibilityDate1: '',
+    visibilityTime1: '',
     hyperlink1: '',
     photo2: null,
     photo2Preview: null,
     visibilityDate2: '',
+    visibilityTime2: '',
     hyperlink2: '',
     section: 'notice',
     years: []
@@ -71,6 +73,7 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
     if (!formData.visibilityDate1) {
       newErrors.visibilityDate1 = 'Visibility date is required';
     }
+    // visibilityTime1 is optional; if provided, ensure format is non-empty
     if (!formData.hyperlink1) {
       newErrors.hyperlink1 = 'Hyperlink is required';
     }
@@ -106,6 +109,9 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
         formDataToSend.append('section', formData.section);
         formDataToSend.append('title', formData.title);
         formDataToSend.append('visibilityDate', formData.visibilityDate1);
+        if (formData.visibilityTime1) {
+          formDataToSend.append('visibilityTime', formData.visibilityTime1);
+        }
         formDataToSend.append('hyperlink', formData.hyperlink1);
         formDataToSend.append('years', JSON.stringify(formData.years));
         
@@ -272,6 +278,14 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 onChange={(e) => handleInputChange(e, 'visibilityDate1')}
                 className={`form-input ${errors.visibilityDate1 ? 'error' : ''}`}
               />
+                <input
+                  type="time"
+                  id="visibilityTime1"
+                  value={formData.visibilityTime1}
+                  onChange={(e) => handleInputChange(e, 'visibilityTime1')}
+                  className="form-input time-input"
+                  style={{ marginTop: 8 }}
+                />
               {errors.visibilityDate1 && <span className="error-text">{errors.visibilityDate1}</span>}
             </div>
 
@@ -322,6 +336,14 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 value={formData.visibilityDate2}
                 onChange={(e) => handleInputChange(e, 'visibilityDate2')}
                 className="form-input"
+              />
+              <input
+                type="time"
+                id="visibilityTime2"
+                value={formData.visibilityTime2}
+                onChange={(e) => handleInputChange(e, 'visibilityTime2')}
+                className="form-input time-input"
+                style={{ marginTop: 8 }}
               />
             </div>
 
