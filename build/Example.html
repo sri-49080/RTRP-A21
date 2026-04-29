@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Producer Consumer Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .buffer-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .slot {
+            width: 100px;
+            height: 100px;
+            border: 3px solid white;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            background: #95a5a6;
+            transition: all 0.5s;
+        }
+
+        .filled {
+            background: #2ecc71;
+        }
+
+        .empty {
+            background: #95a5a6;
+        }
+
+        #log {
+            width: 80%;
+            height: 250px;
+            margin: auto;
+            padding: 15px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            overflow-y: auto;
+            text-align: left;
+            font-family: monospace;
+        }
+
+        #count {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Producer Consumer Problem Simulation</h1>
+    <div id="count">Items in Buffer: 0</div>
+
+    <div class="buffer-container" id="buffer"></div>
+
+    <h2>Execution Log</h2>
+    <div id="log"></div>
+
+    <script>
+        const bufferSize = 5;
+        let buffer = Array(bufferSize).fill(null);
+        let inPtr = 0;
+        let outPtr = 0;
+        let count = 0;
+        let item = 1;
+
+        const bufferDiv = document.getElementById("buffer");
+        const logDiv = document.getElementById("log");
+        const countDiv = document.getElementById("count");
+
+        function initializeBuffer() {
+            for (let i = 0; i < bufferSize; i++) {
+                const slot = document.createElement("div");
+                slot.className = "slot empty";
+                slot.id = `slot-${i}`;
+                slot.textContent = "Empty";
+                bufferDiv.appendChild(slot);
+            }
+        }
+
+        function updateGUI() {
+            for (let i = 0; i < bufferSize; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                if (buffer[i] === null) {
+                    slot.textContent = "Empty";
+                    slot.className = "slot empty";
+                } else {
+                    slot.textContent = buffer[i];
+                    slot.className = "slot filled";
+                }
+            }
+            countDiv.textContent = `Items in Buffer: ${count}`;
+        }
+
+        function log(message) {
+            logDiv.innerHTML += message + "<br>";
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function produce() {
+            if (count < bufferSize) {
+                buffer[inPtr] = item;
+                log(`Produced: ${item}`);
+                item++;
+                inPtr = (inPtr + 1) % bufferSize;
+                count++;
+                updateGUI();
+            }
+        }
+
+        function consume() {
+            if (count > 0) {
+                const consumed = buffer[outPtr];
+                buffer[outPtr] = null;
+                log(`Consumed: ${consumed}`);
+                outPtr = (outPtr + 1) % bufferSize;
+                count--;
+                updateGUI();
+            }
+        }
+
+        initializeBuffer();
+        updateGUI();
+
+        setInterval(produce, 1000);
+        setInterval(consume, 1500);
+    </script>
+
+</body>
+</html>

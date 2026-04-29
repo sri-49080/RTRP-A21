@@ -54,8 +54,8 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
 
     fetchNotices();
     
-    // Refresh data every 30 seconds to check for photo visibility changes
-    const interval = setInterval(fetchNotices, 30 * 1000);
+    // Refresh data every 10 seconds to update notice colors in real-time
+    const interval = setInterval(fetchNotices, 10 * 1000);
     
     return () => clearInterval(interval);
   }, [user]);
@@ -143,7 +143,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
                 key={notice.id}
                 className="notice-card urgent"
                 onClick={() => setSelectedNoticeEvent(notice)}
-                style={{ cursor: 'pointer' }}
+                style={{ backgroundColor: notice.color, cursor: 'pointer' }}
               >
                 {notice.photo && (
                   <img src={notice.photo} alt={notice.title} className="notice-card-img" />
@@ -163,7 +163,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
                 key={notice.id}
                 className="notice-card new"
                 onClick={() => setSelectedNoticeEvent(notice)}
-                style={{ cursor: 'pointer' }}
+                style={{ backgroundColor: notice.color, cursor: 'pointer' }}
               >
                 {notice.photo && (
                   <img src={notice.photo} alt={notice.title} className="notice-card-img" />

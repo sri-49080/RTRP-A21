@@ -11,11 +11,15 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
     photo1Preview: null,
     visibilityDate1: '',
     visibilityTime1: '',
+    visibilityEndDate1: '',
+    visibilityEndTime1: '',
     hyperlink1: '',
     photo2: null,
     photo2Preview: null,
     visibilityDate2: '',
     visibilityTime2: '',
+    visibilityEndDate2: '',
+    visibilityEndTime2: '',
     hyperlink2: '',
     section: 'notice',
     years: []
@@ -71,9 +75,19 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
       newErrors.photo1 = 'Photo is required for notices';
     }
     if (!formData.visibilityDate1) {
-      newErrors.visibilityDate1 = 'Visibility date is required';
+      newErrors.visibilityDate1 = 'Visibility start date is required';
     }
-    // visibilityTime1 is optional; if provided, ensure format is non-empty
+    if (!formData.visibilityEndDate1) {
+      newErrors.visibilityEndDate1 = 'Visibility end date is required';
+    }
+    // Validate that end date is after start date
+    if (formData.visibilityDate1 && formData.visibilityEndDate1) {
+      const startDate = new Date(formData.visibilityDate1);
+      const endDate = new Date(formData.visibilityEndDate1);
+      if (endDate <= startDate) {
+        newErrors.visibilityEndDate1 = 'End date must be after start date';
+      }
+    }
     if (!formData.hyperlink1) {
       newErrors.hyperlink1 = 'Hyperlink is required';
     }
@@ -112,6 +126,10 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
         if (formData.visibilityTime1) {
           formDataToSend.append('visibilityTime', formData.visibilityTime1);
         }
+        formDataToSend.append('visibilityEndDate', formData.visibilityEndDate1);
+        if (formData.visibilityEndTime1) {
+          formDataToSend.append('visibilityEndTime', formData.visibilityEndTime1);
+        }
         formDataToSend.append('hyperlink', formData.hyperlink1);
         formDataToSend.append('years', JSON.stringify(formData.years));
         
@@ -128,6 +146,12 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
         }
         if (formData.visibilityTime2) {
           formDataToSend.append('visibilityTime2', formData.visibilityTime2);
+        }
+        if (formData.visibilityEndDate2) {
+          formDataToSend.append('visibilityEndDate2', formData.visibilityEndDate2);
+        }
+        if (formData.visibilityEndTime2) {
+          formDataToSend.append('visibilityEndTime2', formData.visibilityEndTime2);
         }
         if (formData.hyperlink2) {
           formDataToSend.append('hyperlink2', formData.hyperlink2);
@@ -297,7 +321,7 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
             {/* Visibility Date 1 - Mandatory */}
             <div className="form-section">
               <label htmlFor="visibilityDate1" className="field-label">
-                visibility date
+                visibility start date
                 <span className="required">*</span>
               </label>
               <input
@@ -316,6 +340,30 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                   style={{ marginTop: 8 }}
                 />
               {errors.visibilityDate1 && <span className="error-text">{errors.visibilityDate1}</span>}
+            </div>
+
+            {/* Visibility End Date 1 - Mandatory */}
+            <div className="form-section">
+              <label htmlFor="visibilityEndDate1" className="field-label">
+                visibility end date
+                <span className="required">*</span>
+              </label>
+              <input
+                type="date"
+                id="visibilityEndDate1"
+                value={formData.visibilityEndDate1}
+                onChange={(e) => handleInputChange(e, 'visibilityEndDate1')}
+                className={`form-input ${errors.visibilityEndDate1 ? 'error' : ''}`}
+              />
+              <input
+                type="time"
+                id="visibilityEndTime1"
+                value={formData.visibilityEndTime1}
+                onChange={(e) => handleInputChange(e, 'visibilityEndTime1')}
+                className="form-input time-input"
+                style={{ marginTop: 8 }}
+              />
+              {errors.visibilityEndDate1 && <span className="error-text">{errors.visibilityEndDate1}</span>}
             </div>
 
             {/* Hyperlink 1 - Mandatory */}
@@ -358,7 +406,7 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
 
             {/* Visibility Date 2 - Optional */}
             <div className="form-section">
-              <label htmlFor="visibilityDate2" className="field-label">visibility date</label>
+              <label htmlFor="visibilityDate2" className="field-label">visibility start date</label>
               <input
                 type="date"
                 id="visibilityDate2"
@@ -371,6 +419,26 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 id="visibilityTime2"
                 value={formData.visibilityTime2}
                 onChange={(e) => handleInputChange(e, 'visibilityTime2')}
+                className="form-input time-input"
+                style={{ marginTop: 8 }}
+              />
+            </div>
+
+            {/* Visibility End Date 2 - Optional */}
+            <div className="form-section">
+              <label htmlFor="visibilityEndDate2" className="field-label">visibility end date</label>
+              <input
+                type="date"
+                id="visibilityEndDate2"
+                value={formData.visibilityEndDate2}
+                onChange={(e) => handleInputChange(e, 'visibilityEndDate2')}
+                className="form-input"
+              />
+              <input
+                type="time"
+                id="visibilityEndTime2"
+                value={formData.visibilityEndTime2}
+                onChange={(e) => handleInputChange(e, 'visibilityEndTime2')}
                 className="form-input time-input"
                 style={{ marginTop: 8 }}
               />

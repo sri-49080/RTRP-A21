@@ -38,12 +38,14 @@ const noticeSchema = new mongoose.Schema({
     type: String,
     photos: [{
         photoUrl: String,
-        visibilityDate: Date,
+        visibilityDate: Date,         // Start date when photo becomes visible
+        visibilityEndDate: Date,      // End date when photo expires
         hyperlink: String
     }],
     // Legacy fields for backward compatibility
     photoUrl: String,
     visibilityDate: Date,
+    visibilityEndDate: Date,         // Legacy end date field
     hyperlink: String,
     section: String,
     years: [String],  // Changed from [Number] to [String] to match frontend
@@ -209,7 +211,7 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), uploadFields, as
         console.log('Body:', req.body);
         console.log('Files:', req.files ? Object.keys(req.files) : 'No files');
 
-        const { section, visibilityDate, visibilityTime, hyperlink, visibilityDate2, visibilityTime2, hyperlink2, years, title } = req.body;
+        const { section, visibilityDate, visibilityTime, hyperlink, visibilityDate2, visibilityTime2, hyperlink2, years, title, visibilityEndDate, visibilityEndTime, visibilityEndDate2, visibilityEndTime2 } = req.body;
         
         if (!section || !visibilityDate || !hyperlink) {
             return res.status(400).json({ 
@@ -238,12 +240,27 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), uploadFields, as
                     visibilityDateTime = new Date(visibilityDate);
                 }
             }
+            
+            let visibilityEndDateTime;
+            if (visibilityEndDate) {
+                if (visibilityEndTime) {
+                    const combined = `${visibilityEndDate}T${visibilityEndTime}`;
+                    visibilityEndDateTime = new Date(combined);
+                    if (isNaN(visibilityEndDateTime)) {
+                        visibilityEndDateTime = new Date(visibilityEndDate);
+                    }
+                } else {
+                    visibilityEndDateTime = new Date(visibilityEndDate);
+                }
+            }
+            
             photos.push({
                 photoUrl,
                 visibilityDate: visibilityDateTime,
+                visibilityEndDate: visibilityEndDateTime,
                 hyperlink
             });
-            console.log('Added photo 1:', { photoUrl, visibilityDate: visibilityDateTime, hyperlink });
+            console.log('Added photo 1:', { photoUrl, visibilityDate: visibilityDateTime, visibilityEndDate: visibilityEndDateTime, hyperlink });
         }
 
         // Photo 2 (optional secondary)
@@ -261,12 +278,27 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), uploadFields, as
                     visibilityDateTime2 = new Date(visibilityDate2);
                 }
             }
+            
+            let visibilityEndDateTime2;
+            if (visibilityEndDate2) {
+                if (visibilityEndTime2) {
+                    const combined = `${visibilityEndDate2}T${visibilityEndTime2}`;
+                    visibilityEndDateTime2 = new Date(combined);
+                    if (isNaN(visibilityEndDateTime2)) {
+                        visibilityEndDateTime2 = new Date(visibilityEndDate2);
+                    }
+                } else {
+                    visibilityEndDateTime2 = new Date(visibilityEndDate2);
+                }
+            }
+            
             photos.push({
                 photoUrl: photoUrl2,
                 visibilityDate: visibilityDateTime2,
+                visibilityEndDate: visibilityEndDateTime2,
                 hyperlink: hyperlink2
             });
-            console.log('Added photo 2:', { photoUrl: photoUrl2, visibilityDate: visibilityDateTime2, hyperlink: hyperlink2 });
+            console.log('Added photo 2:', { photoUrl: photoUrl2, visibilityDate: visibilityDateTime2, visibilityEndDate: visibilityEndDateTime2, hyperlink: hyperlink2 });
         }
 
         let parsedYears = [];
@@ -371,10 +403,21 @@ app.get('/api/notices', async (req, res) => {
                     if (!photos || photos.length === 0) {
                         // Fallback to legacy photoUrl if no photos array
                         console.log(`Notice "${notice.title}": No photos array, using legacy photoUrl`);
+                        
+                        // Check if legacy photo has expired
+                        if (notice.visibilityEndDate) {
+                            const endDate = new Date(notice.visibilityEndDate);
+                            if (endDate <= now) {
+                                console.log(`Legacy photo has expired on ${notice.visibilityEndDate}`);
+                                return null;
+                            }
+                        }
+                        
                         return {
                             photoUrl: notice.photoUrl,
                             hyperlink: notice.hyperlink,
-                            visibilityDate: notice.visibilityDate
+                            visibilityDate: notice.visibilityDate,
+                            visibilityEndDate: notice.visibilityEndDate
                         };
                     }
 
@@ -390,22 +433,30 @@ app.get('/api/notices', async (req, res) => {
                     console.log('Sorted photos:', sortedPhotos.map((p, i) => ({
                         index: i,
                         visDate: p.visibilityDate,
+                        endDate: p.visibilityEndDate,
                         hasPhotoUrl: !!p.photoUrl
                     })));
 
-                    // Find the currently visible photo
+                    // Find the currently visible photo (considering both start and end dates)
                     for (let i = sortedPhotos.length - 1; i >= 0; i--) {
                         const photo = sortedPhotos[i];
                         const visDate = new Date(photo.visibilityDate || 0);
+                        const endDate = photo.visibilityEndDate ? new Date(photo.visibilityEndDate) : null;
                         
-                        console.log(`Checking photo ${i}: visDate=${photo.visibilityDate}, now=${now}, visDate <= now? ${visDate <= now}`);
+                        console.log(`Checking photo ${i}: visDate=${photo.visibilityDate}, endDate=${photo.visibilityEndDate}, now=${now}`);
                         
                         // Check if this photo's visibility date has passed
                         if (visDate <= now) {
+                            // Check if the photo has expired
+                            if (endDate && endDate <= now) {
+                                console.log(`Photo ${i} has expired on ${photo.visibilityEndDate}`);
+                                continue; // Skip this photo, it's expired
+                            }
+                            
                             // Check if there's a next photo
                             if (i === sortedPhotos.length - 1) {
-                                // This is the last photo, so it's visible
-                                console.log(`Photo ${i} is last - showing it`);
+                                // This is the last photo, so it's visible (if not expired)
+                                console.log(`Photo ${i} is last and not expired - showing it`);
                                 return photo;
                             } else {
                                 // Check if the next photo's visibility date is in the future
@@ -413,7 +464,7 @@ app.get('/api/notices', async (req, res) => {
                                 const nextVisDate = new Date(nextPhoto.visibilityDate || 0);
                                 console.log(`Photo ${i} has next photo with visDate=${nextPhoto.visibilityDate}, nextVisDate > now? ${nextVisDate > now}`);
                                 if (nextVisDate > now) {
-                                    // Next photo is not visible yet, so this one is visible
+                                    // Next photo is not visible yet, so this one is visible (if not expired)
                                     console.log(`Next photo not visible yet - showing photo ${i}`);
                                     return photo;
                                 }
@@ -421,9 +472,16 @@ app.get('/api/notices', async (req, res) => {
                         }
                     }
 
-                    // If no photo is visible based on dates, return the first one (if it exists)
-                    console.log('No photo found by date logic, returning first photo');
-                    return sortedPhotos.length > 0 ? sortedPhotos[0] : null;
+                    // If no photo is visible based on dates, return the first one (if it exists and not expired)
+                    console.log('No photo found by date logic, checking first photo');
+                    if (sortedPhotos.length > 0) {
+                        const firstPhoto = sortedPhotos[0];
+                        const endDate = firstPhoto.visibilityEndDate ? new Date(firstPhoto.visibilityEndDate) : null;
+                        if (!endDate || endDate > now) {
+                            return firstPhoto;
+                        }
+                    }
+                    return null;
                 };
 
                 const visiblePhoto = getVisiblePhoto(notice.photos);
@@ -433,14 +491,33 @@ app.get('/api/notices', async (req, res) => {
                     return null;
                 }
 
-                // Calculate color based on visibility date
-                let color = undefined;
-                if (visiblePhoto.visibilityDate) {
-                    const visibilityDate = new Date(visiblePhoto.visibilityDate);
-                    const msUntilExpiry = visibilityDate - now;
-                    const daysUntilExpiry = Math.ceil(msUntilExpiry / (1000 * 60 * 60 * 24));
+                // Calculate color based on remaining visibility duration
+                let color = '#4CAF50'; // Default green
+                if (visiblePhoto.visibilityDate && visiblePhoto.visibilityEndDate) {
+                    const startDate = new Date(visiblePhoto.visibilityDate);
+                    const endDate = new Date(visiblePhoto.visibilityEndDate);
                     
-                    console.log(`Notice "${notice.title}": photo expires in ${daysUntilExpiry} days`);
+                    const totalDuration = endDate - startDate;
+                    const timeRemaining = endDate - now;
+                    const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
+                    
+                    console.log(`Notice "${notice.title}": ${daysRemaining} days remaining (end: ${visiblePhoto.visibilityEndDate})`);
+                    
+                    // Red: 2 days or fewer remaining
+                    if (daysRemaining <= 2) {
+                        color = '#FF5252'; // Red
+                        console.log(`  -> RED (${daysRemaining} days remaining)`);
+                    }
+                    // Orange: 50% or less remaining
+                    else if (timeRemaining <= totalDuration * 0.5) {
+                        color = '#FFA500'; // Orange
+                        console.log(`  -> ORANGE (${(timeRemaining / totalDuration * 100).toFixed(1)}% remaining)`);
+                    }
+                    // Green: More than 50% remaining
+                    else {
+                        color = '#4CAF50'; // Green
+                        console.log(`  -> GREEN (${(timeRemaining / totalDuration * 100).toFixed(1)}% remaining)`);
+                    }
                 }
 
                 return {
@@ -454,6 +531,7 @@ app.get('/api/notices', async (req, res) => {
                     section: notice.section,
                     hyperlink: visiblePhoto.hyperlink,
                     visibilityDate: visiblePhoto.visibilityDate,
+                    visibilityEndDate: visiblePhoto.visibilityEndDate,
                     color: color
                 };
             })
