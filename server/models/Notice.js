@@ -23,6 +23,9 @@ const noticeSchema = new mongoose.Schema({
     visibilityDate: {
       type: Date,
     },
+    visibilityEndDate: {
+      type: Date,
+    },
     hyperlink: {
       type: String,
     }
@@ -36,6 +39,9 @@ const noticeSchema = new mongoose.Schema({
   },
   hyperlink: {
     type: String,
+  },
+  visibilityEndDate: {
+    type: Date,
   },
   section: {
     type: String,

@@ -28,6 +28,13 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
   const [errors, setErrors] = useState({});
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
+  const parseDateTime = (dateValue, timeValue) => {
+    if (!dateValue) return null;
+    const value = timeValue ? `${dateValue}T${timeValue}` : dateValue;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   // (Removed localStorage hydration because it corrupts File objects)
 
   const handlePhotoChange = (e, photoField) => {
@@ -74,20 +81,51 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
     if (!formData.photo1 && formData.section === 'notice') {
       newErrors.photo1 = 'Photo is required for notices';
     }
+
     if (!formData.visibilityDate1) {
       newErrors.visibilityDate1 = 'Visibility start date is required';
+    }
+    if (!formData.visibilityTime1) {
+      newErrors.visibilityTime1 = 'Visibility start time is required';
     }
     if (!formData.visibilityEndDate1) {
       newErrors.visibilityEndDate1 = 'Visibility end date is required';
     }
-    // Validate that end date is after start date
-    if (formData.visibilityDate1 && formData.visibilityEndDate1) {
-      const startDate = new Date(formData.visibilityDate1);
-      const endDate = new Date(formData.visibilityEndDate1);
-      if (endDate <= startDate) {
-        newErrors.visibilityEndDate1 = 'End date must be after start date';
+    if (!formData.visibilityEndTime1) {
+      newErrors.visibilityEndTime1 = 'Visibility end time is required';
+    }
+
+    const startDateTime1 = parseDateTime(formData.visibilityDate1, formData.visibilityTime1);
+    const endDateTime1 = parseDateTime(formData.visibilityEndDate1, formData.visibilityEndTime1);
+    if (startDateTime1 && endDateTime1 && endDateTime1 <= startDateTime1) {
+      newErrors.visibilityEndDate1 = 'End date/time must be after start date/time';
+    }
+
+    const photo2Provided = formData.photo2 || formData.visibilityDate2 || formData.visibilityTime2 || formData.visibilityEndDate2 || formData.visibilityEndTime2 || formData.hyperlink2;
+    if (photo2Provided) {
+      if (!formData.visibilityDate2) {
+        newErrors.visibilityDate2 = 'Secondary visibility start date is required';
+      }
+      if (!formData.visibilityTime2) {
+        newErrors.visibilityTime2 = 'Secondary visibility start time is required';
+      }
+      if (!formData.visibilityEndDate2) {
+        newErrors.visibilityEndDate2 = 'Secondary visibility end date is required';
+      }
+      if (!formData.visibilityEndTime2) {
+        newErrors.visibilityEndTime2 = 'Secondary visibility end time is required';
+      }
+
+      const startDateTime2 = parseDateTime(formData.visibilityDate2, formData.visibilityTime2);
+      const endDateTime2 = parseDateTime(formData.visibilityEndDate2, formData.visibilityEndTime2);
+      if (startDateTime2 && endDateTime2 && endDateTime2 <= startDateTime2) {
+        newErrors.visibilityEndDate2 = 'Secondary end date/time must be after start date/time';
+      }
+      if (startDateTime1 && endDateTime1 && startDateTime2 && startDateTime2 < endDateTime1) {
+        newErrors.visibilityDate2 = 'Secondary image must start after the first image ends';
       }
     }
+
     if (!formData.hyperlink1) {
       newErrors.hyperlink1 = 'Hyperlink is required';
     }
@@ -331,15 +369,16 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 onChange={(e) => handleInputChange(e, 'visibilityDate1')}
                 className={`form-input ${errors.visibilityDate1 ? 'error' : ''}`}
               />
-                <input
-                  type="time"
-                  id="visibilityTime1"
-                  value={formData.visibilityTime1}
-                  onChange={(e) => handleInputChange(e, 'visibilityTime1')}
-                  className="form-input time-input"
-                  style={{ marginTop: 8 }}
-                />
+              <input
+                type="time"
+                id="visibilityTime1"
+                value={formData.visibilityTime1}
+                onChange={(e) => handleInputChange(e, 'visibilityTime1')}
+                className={`form-input time-input ${errors.visibilityTime1 ? 'error' : ''}`}
+                style={{ marginTop: 8 }}
+              />
               {errors.visibilityDate1 && <span className="error-text">{errors.visibilityDate1}</span>}
+              {errors.visibilityTime1 && <span className="error-text">{errors.visibilityTime1}</span>}
             </div>
 
             {/* Visibility End Date 1 - Mandatory */}
@@ -360,10 +399,11 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 id="visibilityEndTime1"
                 value={formData.visibilityEndTime1}
                 onChange={(e) => handleInputChange(e, 'visibilityEndTime1')}
-                className="form-input time-input"
+                className={`form-input time-input ${errors.visibilityEndTime1 ? 'error' : ''}`}
                 style={{ marginTop: 8 }}
               />
               {errors.visibilityEndDate1 && <span className="error-text">{errors.visibilityEndDate1}</span>}
+              {errors.visibilityEndTime1 && <span className="error-text">{errors.visibilityEndTime1}</span>}
             </div>
 
             {/* Hyperlink 1 - Mandatory */}
@@ -412,16 +452,18 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 id="visibilityDate2"
                 value={formData.visibilityDate2}
                 onChange={(e) => handleInputChange(e, 'visibilityDate2')}
-                className="form-input"
+                className={`form-input ${errors.visibilityDate2 ? 'error' : ''}`}
               />
               <input
                 type="time"
                 id="visibilityTime2"
                 value={formData.visibilityTime2}
                 onChange={(e) => handleInputChange(e, 'visibilityTime2')}
-                className="form-input time-input"
+                className={`form-input time-input ${errors.visibilityTime2 ? 'error' : ''}`}
                 style={{ marginTop: 8 }}
               />
+              {errors.visibilityDate2 && <span className="error-text">{errors.visibilityDate2}</span>}
+              {errors.visibilityTime2 && <span className="error-text">{errors.visibilityTime2}</span>}
             </div>
 
             {/* Visibility End Date 2 - Optional */}
@@ -439,9 +481,11 @@ const AddNoticeEvent = ({ user = {}, onNavigateToDashboard, onNavigateToHistory,
                 id="visibilityEndTime2"
                 value={formData.visibilityEndTime2}
                 onChange={(e) => handleInputChange(e, 'visibilityEndTime2')}
-                className="form-input time-input"
+                className={`form-input time-input ${errors.visibilityEndTime2 ? 'error' : ''}`}
                 style={{ marginTop: 8 }}
               />
+              {errors.visibilityEndDate2 && <span className="error-text">{errors.visibilityEndDate2}</span>}
+              {errors.visibilityEndTime2 && <span className="error-text">{errors.visibilityEndTime2}</span>}
             </div>
 
             {/* Hyperlink 2 - Optional */}

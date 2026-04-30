@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import SidePanel from './SidePanel';
 import ItemDetailModal from './ItemDetailModal';
-import { getItems } from '../data/storageService';
+import { getItems, addToHistory, getAuthToken } from '../data/storageService';
 import { isAdmin } from '../utils/roleUtils';
 
 const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, onNavigateToSearch, selectedItem }) => {
@@ -25,7 +25,18 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
     const fetchNotices = async () => {
       try {
         const userYear = user.year || '1st Year';
-        const response = await fetch(`http://localhost:5000/api/notices?year=${encodeURIComponent(userYear)}`);
+        const token = getAuthToken();
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`http://localhost:5000/api/notices?year=${encodeURIComponent(userYear)}`, {
+          headers: headers
+        });
         
         if (!response.ok) {
           throw new Error('Failed to fetch notices');
@@ -60,6 +71,12 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
     return () => clearInterval(interval);
   }, [user]);
 
+  const handleItemClick = (item) => {
+    // Add to history when clicked
+    addToHistory(item);
+    // Then show the detail modal
+    setSelectedNoticeEvent(item);
+  };
   const urgentNotices = notices.filter(n => n.type === 'urgent');
   const newNotices = notices.filter(n => n.type === 'new');
 
@@ -74,7 +91,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
                 key={notice.id}
                 className="academics-notice-card"
                 style={{ backgroundColor: notice.color, cursor: 'pointer' }}
-                onClick={() => setSelectedNoticeEvent(notice)}
+                onClick={() => handleItemClick(notice)}
               >
                 {notice.photo && (
                   <img src={notice.photo} alt={notice.title} className="academics-notice-img" />
@@ -97,7 +114,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
                 key={event.id}
                 className="event-card-full"
                 style={{ backgroundColor: event.color, cursor: 'pointer' }}
-                onClick={() => setSelectedNoticeEvent(event)}
+                onClick={() => handleItemClick(event)}
               >
                 {event.photo && (
                   <img src={event.photo} alt={event.title} className="event-card-full-img" />
@@ -120,7 +137,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
               <div
                 key={event.id}
                 className="event-card"
-                onClick={() => setSelectedNoticeEvent(event)}
+                onClick={() => handleItemClick(event)}
                 style={{ backgroundColor: event.color, cursor: 'pointer' }}
               >
                 {event.photo && (
@@ -142,7 +159,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
               <div
                 key={notice.id}
                 className="notice-card urgent"
-                onClick={() => setSelectedNoticeEvent(notice)}
+                onClick={() => handleItemClick(notice)}
                 style={{ backgroundColor: notice.color, cursor: 'pointer' }}
               >
                 {notice.photo && (
@@ -162,7 +179,7 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
               <div
                 key={notice.id}
                 className="notice-card new"
-                onClick={() => setSelectedNoticeEvent(notice)}
+                onClick={() => handleItemClick(notice)}
                 style={{ backgroundColor: notice.color, cursor: 'pointer' }}
               >
                 {notice.photo && (

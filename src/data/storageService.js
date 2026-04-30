@@ -1,6 +1,7 @@
 const STORAGE_KEY_CURRENT_USER = 'currentUser';
 const STORAGE_KEY_AUTH_TOKEN = 'authToken';
 const STORAGE_KEY_ITEMS = 'noticesEvents';
+const STORAGE_KEY_HISTORY = 'historyItems';
 
 const sampleItems = [
   {
@@ -126,6 +127,77 @@ const isAuthenticated = () => {
   return !!getAuthToken() && !!getCurrentUser();
 };
 
+// History Management
+const getHistory = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error('Failed to load history from localStorage', e);
+    return [];
+  }
+};
+
+const saveHistory = (history) => {
+  try {
+    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to save history to localStorage', e);
+  }
+};
+
+const addToHistory = (item) => {
+  const history = getHistory();
+  
+  // Prevent duplicates - check if item already exists by id
+  const exists = history.some(h => h.id === item.id);
+  if (exists) {
+    return history; // Don't add if already exists
+  }
+  
+  // Create history entry with required fields
+  const historyEntry = {
+    id: item.id,
+    title: item.title,
+    description: item.details || item.description || '',
+    link: item.hyperlink || item.link || '',
+    startDate: item.visibilityDate || new Date().toISOString(),
+    endDate: item.visibilityEndDate || new Date().toISOString(),
+    isAttended: false,
+    clickedDate: new Date().toISOString(),
+    section: item.section || 'notice',
+    photo: item.photo || ''
+  };
+  
+  const updatedHistory = [historyEntry, ...history]; // Add to beginning
+  saveHistory(updatedHistory);
+  return updatedHistory;
+};
+
+const updateHistoryItem = (itemId, updates) => {
+  const history = getHistory();
+  const updated = history.map(item => 
+    item.id === itemId ? { ...item, ...updates } : item
+  );
+  saveHistory(updated);
+  return updated;
+};
+
+const removeFromHistory = (itemId) => {
+  const history = getHistory();
+  const filtered = history.filter(item => item.id !== itemId);
+  saveHistory(filtered);
+  return filtered;
+};
+
+const clearHistory = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY_HISTORY);
+  } catch (e) {
+    console.error('Failed to clear history', e);
+  }
+};
+
 export {
   getCurrentUser,
   setCurrentUser,
@@ -137,5 +209,10 @@ export {
   getItems,
   addItem,
   saveItems,
-  findUserByEmailOrUsername
+  findUserByEmailOrUsername,
+  getHistory,
+  addToHistory,
+  updateHistoryItem,
+  removeFromHistory,
+  clearHistory
 };

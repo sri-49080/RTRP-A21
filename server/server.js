@@ -333,6 +333,7 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), uploadFields, as
           photos: photos,
           photoUrl: firstPhoto?.photoUrl,
           visibilityDate: firstPhoto?.visibilityDate,
+          visibilityEndDate: firstPhoto?.visibilityEndDate,
           hyperlink: firstPhoto?.hyperlink,
           section,
           years: parsedYears
@@ -353,44 +354,49 @@ app.post('/api/notices', authenticateToken, authorize('Admin'), uploadFields, as
             section: savedNotice.section,
             hyperlink: savedNotice.hyperlink,
             visibilityDate: savedNotice.visibilityDate,
+            visibilityEndDate: savedNotice.visibilityEndDate,
             photos: savedNotice.photos.map(p => ({
                 photo: p.photoUrl ? `http://localhost:${PORT}${p.photoUrl}` : null,
                 visibilityDate: p.visibilityDate,
+                visibilityEndDate: p.visibilityEndDate,
                 hyperlink: p.hyperlink
             }))
         };
 
-        console.log('Sending response:', responseItem);
         res.status(201).json(responseItem);
     } catch (error) {
-        console.error('========== ERROR CREATING NOTICE ==========');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
+        console.error('========== ERROR CREATING NOTICE ==========', error.message);
+        console.error(error.stack);
         res.status(500).json({ message: 'Server error', details: error.message });
     }
 });
 
 // @route   GET /api/notices
-// @desc    Get all active notices and events (filtered by visibilityDate and user year)
-app.get('/api/notices', async (req, res) => {
+// @desc    Get all active notices and events (filtered by visibilityDate and user year/role)
+app.get('/api/notices', authenticateToken, async (req, res) => {
     try {
         const { year } = req.query; // Optional: filter by user's year
         const now = new Date();
+        const userRole = req.user.role;
+        const userEmail = req.user.email;
 
         console.log('=== GET /api/notices ===');
+        console.log('User:', userEmail, 'Role:', userRole);
         console.log('Query year parameter:', year);
         console.log('Current time:', now);
 
         // Build filter query - find notices that have at least one photo with valid visibility
         let query = {};
 
-        // If user year is provided, filter by year match
-        if (year) {
+        // If user is not admin, filter by year match
+        if (userRole !== 'Admin' && year) {
             query.years = year; // Only show notices that include this year
             console.log('Filtering by year:', year);
+        } else if (userRole === 'Admin') {
+            console.log('Admin user - showing all notices regardless of year');
         }
 
-        // Get all notices matching the year filter
+        // Get all notices matching the year filter (or all if admin)
         const allNotices = await Notice.find(query).sort({ createdAt: -1 });
         
         console.log('Found total notices count:', allNotices.length);
@@ -472,15 +478,8 @@ app.get('/api/notices', async (req, res) => {
                         }
                     }
 
-                    // If no photo is visible based on dates, return the first one (if it exists and not expired)
-                    console.log('No photo found by date logic, checking first photo');
-                    if (sortedPhotos.length > 0) {
-                        const firstPhoto = sortedPhotos[0];
-                        const endDate = firstPhoto.visibilityEndDate ? new Date(firstPhoto.visibilityEndDate) : null;
-                        if (!endDate || endDate > now) {
-                            return firstPhoto;
-                        }
-                    }
+                    // If no photo is visible based on dates, do not show a future photo
+                    console.log('No currently active photo found for this notice');
                     return null;
                 };
 
