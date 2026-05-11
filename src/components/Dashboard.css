@@ -656,3 +656,23 @@
     display: none;
   }
 }
+/* ── Notice card body (date display) ─────────────────────────────────────── */
+.notice-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.notice-deadline {
+  font-size: 11px;
+  opacity: 0.75;
+  font-weight: 400;
+}
+
+.empty-msg {
+  font-size: 13px;
+  color: #999;
+  padding: 12px 0;
+  text-align: center;
+}

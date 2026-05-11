@@ -36,57 +36,36 @@ const sampleItems = [
   }
 ];
 
-const getCurrentUser = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
 
-const setCurrentUser = (user) => {
+// User session management (in-memory for frontend)
+let currentUser = null;
+let authToken = null;
+
+const getCurrentUser = () => currentUser;
+const setCurrentUser = (user) => { currentUser = user; };
+const clearCurrentUser = () => { currentUser = null; };
+
+
+// Items (notices/events) API
+const getItems = async (token, year) => {
   try {
-    localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(user));
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    let url = 'http://localhost:5000/api/notices';
+    if (year) url += `?year=${encodeURIComponent(year)}`;
+    const response = await fetch(url, { headers });
+    if (!response.ok) throw new Error('Failed to fetch items');
+    return await response.json();
   } catch (e) {
-    console.error('Failed to save user to localStorage', e);
+    console.error('Failed to fetch items from API', e);
+    return [];
   }
 };
 
-const clearCurrentUser = () => {
-  try {
-    localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
-  } catch (e) {
-    console.error('Failed to remove currentUser from localStorage', e);
-  }
-};
-
-const getItems = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_ITEMS);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch (e) {
-    console.error('Failed to load items from localStorage', e);
-  }
-  return sampleItems;
-};
-
-const saveItems = (items) => {
-  try {
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
-  } catch (e) {
-    console.error('Failed to save items to localStorage', e);
-  }
-};
-
-const addItem = (item) => {
-  const current = getItems();
-  const next = [...current, item];
-  saveItems(next);
-  return next;
-};
+// addItem is intentionally a no-op here — the real POST is performed
+// directly in AddNoticeEvent.handleSubmit. Keeping this stub so existing
+// call-sites don't break.
+const addItem = (item) => item;
 
 const findUserByEmailOrUsername = (value) => {
   const user = getCurrentUser();
@@ -97,106 +76,79 @@ const findUserByEmailOrUsername = (value) => {
   return null;
 };
 
-// JWT Token Management
-const getAuthToken = () => {
-  try {
-    return localStorage.getItem(STORAGE_KEY_AUTH_TOKEN);
-  } catch (e) {
-    console.error('Failed to get auth token', e);
-    return null;
-  }
-};
 
-const setAuthToken = (token) => {
-  try {
-    localStorage.setItem(STORAGE_KEY_AUTH_TOKEN, token);
-  } catch (e) {
-    console.error('Failed to save auth token', e);
-  }
-};
+// JWT Token Management (in-memory)
+const getAuthToken = () => authToken;
+const setAuthToken = (token) => { authToken = token; };
+const clearAuthToken = () => { authToken = null; };
+const isAuthenticated = () => !!authToken && !!currentUser;
 
-const clearAuthToken = () => {
-  try {
-    localStorage.removeItem(STORAGE_KEY_AUTH_TOKEN);
-  } catch (e) {
-    console.error('Failed to remove auth token', e);
-  }
-};
 
-const isAuthenticated = () => {
-  return !!getAuthToken() && !!getCurrentUser();
-};
-
-// History Management
-const getHistory = () => {
+// History Management (API)
+const getHistory = async (token) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
-    return raw ? JSON.parse(raw) : [];
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch('http://localhost:5000/api/history', { headers });
+    if (!response.ok) throw new Error('Failed to fetch history');
+    return await response.json();
   } catch (e) {
-    console.error('Failed to load history from localStorage', e);
+    console.error('Failed to fetch history from API', e);
     return [];
   }
 };
 
-const saveHistory = (history) => {
+const addToHistory = async (item, token) => {
   try {
-    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch('http://localhost:5000/api/history', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(item)
+    });
+    if (!response.ok) throw new Error('Failed to add to history');
+    return await response.json();
   } catch (e) {
-    console.error('Failed to save history to localStorage', e);
+    console.error('Failed to add to history', e);
+    return null;
   }
 };
 
-const addToHistory = (item) => {
-  const history = getHistory();
-  
-  // Prevent duplicates - check if item already exists by id
-  const exists = history.some(h => h.id === item.id);
-  if (exists) {
-    return history; // Don't add if already exists
-  }
-  
-  // Create history entry with required fields
-  const historyEntry = {
-    id: item.id,
-    title: item.title,
-    description: item.details || item.description || '',
-    link: item.hyperlink || item.link || '',
-    startDate: item.visibilityDate || new Date().toISOString(),
-    endDate: item.visibilityEndDate || new Date().toISOString(),
-    isAttended: false,
-    clickedDate: new Date().toISOString(),
-    section: item.section || 'notice',
-    photo: item.photo || ''
-  };
-  
-  const updatedHistory = [historyEntry, ...history]; // Add to beginning
-  saveHistory(updatedHistory);
-  return updatedHistory;
-};
-
-const updateHistoryItem = (itemId, updates) => {
-  const history = getHistory();
-  const updated = history.map(item => 
-    item.id === itemId ? { ...item, ...updates } : item
-  );
-  saveHistory(updated);
-  return updated;
-};
-
-const removeFromHistory = (itemId) => {
-  const history = getHistory();
-  const filtered = history.filter(item => item.id !== itemId);
-  saveHistory(filtered);
-  return filtered;
-};
-
-const clearHistory = () => {
+const updateHistoryItem = async (itemId, updates, token) => {
   try {
-    localStorage.removeItem(STORAGE_KEY_HISTORY);
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`http://localhost:5000/api/history/${itemId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(updates)
+    });
+    if (!response.ok) throw new Error('Failed to update history item');
+    return await response.json();
   } catch (e) {
-    console.error('Failed to clear history', e);
+    console.error('Failed to update history item', e);
+    return null;
   }
 };
+
+const removeFromHistory = async (itemId, token) => {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`http://localhost:5000/api/history/${itemId}`, {
+      method: 'DELETE',
+      headers
+    });
+    if (!response.ok) throw new Error('Failed to remove from history');
+    return await response.json();
+  } catch (e) {
+    console.error('Failed to remove from history', e);
+    return null;
+  }
+};
+
+const clearHistory = () => {};
 
 export {
   getCurrentUser,
@@ -208,7 +160,6 @@ export {
   isAuthenticated,
   getItems,
   addItem,
-  saveItems,
   findUserByEmailOrUsername,
   getHistory,
   addToHistory,

@@ -60,9 +60,9 @@ const SignUp = ({ onSignUp, onLogout, onLoginClick }) => {
       const data = await response.json();
       
       // Store user and token
+
       setCurrentUser(data.user);
       setAuthToken(data.token);
-      localStorage.setItem('currentUser', JSON.stringify(data.user));
 
       alert('Sign up successful!');
       if (onSignUp) onSignUp(data.user);

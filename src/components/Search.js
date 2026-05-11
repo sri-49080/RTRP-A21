@@ -13,24 +13,11 @@ const Search = ({ onBack }) => {
   useEffect(() => {
     const loadItems = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/notices');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch notices');
-        }
-        
-        const data = await response.json();
+        const data = await getItems();
         setAllItems(data);
       } catch (err) {
-        console.error('Failed to load notices from server, falling back to localStorage:', err);
-        // Fallback to localStorage if server fetch fails
-        try {
-          const data = getItems();
-          setAllItems(data);
-        } catch (localErr) {
-          console.error('Failed to load notices from localStorage:', localErr);
-          setAllItems([]);
-        }
+        console.error('Failed to load notices:', err);
+        setAllItems([]);
       } finally {
         setLoading(false);
       }

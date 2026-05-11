@@ -21,64 +21,41 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
     return item.year === year;
   };
 
+
   useEffect(() => {
     const fetchNotices = async () => {
       try {
         const userYear = user.year || '1st Year';
         const token = getAuthToken();
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await fetch(`http://localhost:5000/api/notices?year=${encodeURIComponent(userYear)}`, {
-          headers: headers
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch notices');
-        }
-        
-        const data = await response.json();
+        const data = await getItems(token, userYear);
         const fetchedEvents = data.filter(item => item.section === 'event');
         const fetchedNotices = data.filter(item => item.section === 'notice');
-
         setEvents(fetchedEvents);
         setNotices(fetchedNotices);
         setAcademicsNotices(fetchedNotices);
       } catch (error) {
         console.error('Error fetching notices:', error);
-        // Fallback to localStorage if server fetch fails
-        const data = getItems();
-        const filtered = data.filter(item => isVisibleForYear(item, user.year || '1st Year'));
-        const fetchedEvents = filtered.filter(item => item.section === 'event');
-        const fetchedNotices = filtered.filter(item => item.section === 'notice');
-
-        setEvents(fetchedEvents);
-        setNotices(fetchedNotices);
-        setAcademicsNotices(fetchedNotices);
+        setEvents([]);
+        setNotices([]);
+        setAcademicsNotices([]);
       }
     };
-
     fetchNotices();
-    
-    // Refresh data every 10 seconds to update notice colors in real-time
     const interval = setInterval(fetchNotices, 10 * 1000);
-    
     return () => clearInterval(interval);
   }, [user]);
 
-  const handleItemClick = (item) => {
+  const handleItemClick = async (item) => {
     // Add to history when clicked
-    addToHistory(item);
+    const token = getAuthToken();
+    await addToHistory(item, token);
     // Then show the detail modal
     setSelectedNoticeEvent(item);
   };
-  const urgentNotices = notices.filter(n => n.type === 'urgent');
+  // Server sets type based on remaining visibility: 'urgent'=red(<=2days), 'warning'=orange, 'new'=green
+  const urgentNotices = notices.filter(n => n.type === 'urgent' || n.type === 'warning');
   const newNotices = notices.filter(n => n.type === 'new');
+  const allNoticesForHome = notices; // show all on home tab
 
   const renderContent = () => {
     if (activeTab === 'academics') {
@@ -151,41 +128,59 @@ const Dashboard = ({ user = {}, onNavigateToHistory, onNavigateToAdd, onLogout, 
           </div>
         </div>
 
-        {/* Urgent Notices Section */}
-        <div className="notices-section">
-          <h3 className="section-title">Notices about to reach deadline</h3>
-          <div className="notices-list">
-            {urgentNotices.map((notice) => (
-              <div
-                key={notice.id}
-                className="notice-card urgent"
-                onClick={() => handleItemClick(notice)}
-                style={{ backgroundColor: notice.color, cursor: 'pointer' }}
-              >
-                {notice.photo && (
-                  <img src={notice.photo} alt={notice.title} className="notice-card-img" />
-                )}
-                <span className="notice-title">{notice.title}</span>
-              </div>
-            ))}
+        {/* Urgent / Warning Notices Section */}
+        {urgentNotices.length > 0 && (
+          <div className="notices-section">
+            <h3 className="section-title">⚠ Notices about to reach deadline</h3>
+            <div className="notices-list">
+              {urgentNotices.map((notice) => (
+                <div
+                  key={notice.id}
+                  className="notice-card urgent"
+                  onClick={() => handleItemClick(notice)}
+                  style={{ backgroundColor: notice.color, cursor: 'pointer' }}
+                >
+                  {notice.photo && (
+                    <img src={notice.photo} alt={notice.title} className="notice-card-img" />
+                  )}
+                  <div className="notice-card-body">
+                    <span className="notice-title">{notice.title}</span>
+                    {notice.visibilityEndDate && (
+                      <span className="notice-deadline">
+                        Expires: {new Date(notice.visibilityEndDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* New Notices Section */}
+        {/* New / Active Notices Section */}
         <div className="notices-section">
           <h3 className="section-title">new notices</h3>
           <div className="notices-list">
-            {newNotices.map((notice) => (
+            {allNoticesForHome.length === 0 && <p className="empty-msg">No notices available.</p>}
+            {allNoticesForHome.map((notice) => (
               <div
                 key={notice.id}
-                className="notice-card new"
+                className={`notice-card ${notice.type === 'urgent' || notice.type === 'warning' ? 'urgent' : 'new'}`}
                 onClick={() => handleItemClick(notice)}
                 style={{ backgroundColor: notice.color, cursor: 'pointer' }}
               >
                 {notice.photo && (
                   <img src={notice.photo} alt={notice.title} className="notice-card-img" />
                 )}
-                <span className="notice-title">{notice.title}</span>
+                <div className="notice-card-body">
+                  <span className="notice-title">{notice.title}</span>
+                  {notice.visibilityDate && (
+                    <span className="notice-deadline">
+                      From: {new Date(notice.visibilityDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
+                      {notice.visibilityEndDate && ` → ${new Date(notice.visibilityEndDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}`}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

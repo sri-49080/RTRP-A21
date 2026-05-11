@@ -180,14 +180,14 @@ app.get('/api/health', (_req, res) => {
 
 app.post('/api/users/signup', async (req, res) => {
   try {
-    const { name, email, username, password, id, year, department } = req.body;
+    const { name, email, username, password, id, year } = req.body;
     if (!email || !username || !name) return res.status(400).json({ error: 'Name, email, username required' });
     const existing = await User.findOne({ $or: [{ email }, { username }] });
     if (existing) return res.status(400).json({ error: 'Email or username already registered' });
     const role = assignRoleByEmail(email);
-    const saved = await new User({ name, email, username, password: password||'', id: id||'', year: year||'1st Year', department: department||'', role }).save();
+    const saved = await new User({ name, email, username, password: password||'', id: id||'', year: year||'1st Year', role }).save();
     console.log('[signup] User saved:', saved._id, 'role:', role);
-    res.status(201).json({ token: generateToken(saved), user: { id: saved._id, name: saved.name, email: saved.email, username: saved.username, year: saved.year, department: saved.department, role: saved.role }, message: 'Sign up successful' });
+    res.status(201).json({ token: generateToken(saved), user: { id: saved._id, name: saved.name, email: saved.email, username: saved.username, year: saved.year, role: saved.role }, message: 'Sign up successful' });
   } catch (err) { console.error('[signup]', err.message); res.status(500).json({ error: 'Failed to sign up', details: err.message }); }
 });
 
@@ -208,10 +208,10 @@ app.get('/api/users/by-year', authenticateToken, authorize('Admin'), async (req,
     console.log('[users/by-year] year query:', years);
     let users;
     if (!years || !years.trim()) {
-      users = await User.find({ role: 'Student' }, 'email name year department');
+      users = await User.find({ role: 'Student' }, 'email name year');
     } else {
       const yearList = years.split(',').map(y => y.trim()).filter(Boolean);
-      users = await User.find({ year: { $in: yearList }, role: 'Student' }, 'email name year department');
+      users = await User.find({ year: { $in: yearList }, role: 'Student' }, 'email name year');
     }
     console.log('[users/by-year] Found:', users.length);
     res.json(users);
@@ -220,7 +220,7 @@ app.get('/api/users/by-year', authenticateToken, authorize('Admin'), async (req,
 
 app.get('/api/users', authenticateToken, authorize('Admin'), async (req, res) => {
   try {
-    const users = await User.find({}, 'name email username year department role createdAt');
+    const users = await User.find({}, 'name email username year role createdAt');
     res.json(users);
   } catch (err) { res.status(500).json({ error: 'Failed to fetch users', details: err.message }); }
 });
